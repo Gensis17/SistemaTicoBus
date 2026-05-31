@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
+using SistemaTicoBus.BL;
 using SistemaTicoBus.BL.Servicios;
 using SistemaTicoBus.DA.Data;
 using SistemaTicoBus.WEB.Models;
@@ -202,13 +203,16 @@ namespace SistemaTicoBus.WEB.Controllers
             }
 
             var listaRutas = queryRutas.ToList();
+            UnidadBL unidadBL = new UnidadBL();
+            var listaUnidades = unidadBL.Listar();
 
             var model = new AdminDashboardViewModel
             {
                 NombreCompleto = nombre,
                 Identificacion = "ADM-001",
                 Rol = "Administrador",
-                Rutas = listaRutas
+                Rutas = listaRutas,
+                Unidades = listaUnidades
             };
 
             return View(model);

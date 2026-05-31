@@ -8,5 +8,6 @@ namespace SistemaTicoBus.WEB.Models
         public string Identificacion { get; set; } = string.Empty;
         public string Rol { get; set; } = "Administrador";
         public IEnumerable<Ruta> Rutas { get; set; } = new List<Ruta>();
+        public IEnumerable<Unidad> Unidades { get; set; } = new List<Unidad>();
     }
 }

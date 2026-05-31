@@ -1,0 +1,314 @@
+﻿@model IEnumerable<SistemaTicoBus.MODEL.Entidades.Unidad>
+
+@{
+    Layout = null;
+    ViewData["Title"] = "Gestión de Unidades";
+}
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" />
+
+<style>
+
+    body {
+        background: #f5f7fb;
+    }
+
+    .page-title {
+        font-size: 48px;
+        font-weight: 700;
+        color: #0f172a;
+    }
+
+    .custom-card {
+        border: none;
+        border-radius: 20px;
+        box-shadow: 0 4px 12px rgba(0,0,0,.08);
+        background: white;
+    }
+
+    .alert-integridad {
+        background: #fff7ed;
+        border-left: 5px solid #f97316;
+        border-radius: 15px;
+        padding: 20px;
+        color: #9a3412;
+    }
+
+    .form-control {
+        border-radius: 12px;
+        height: 50px;
+    }
+
+    .btn-azul {
+        background: #2563eb;
+        color: white;
+        border: none;
+        border-radius: 12px;
+        height: 50px;
+        font-weight: 600;
+    }
+
+        .btn-azul:hover {
+            background: #1d4ed8;
+            color: white;
+        }
+
+    .table th {
+        color: #475569;
+        font-weight: 600;
+    }
+
+    .table td {
+        vertical-align: middle;
+    }
+
+    .badge-activo {
+        background: #dcfce7;
+        color: #15803d;
+        padding: 8px 15px;
+        border-radius: 20px;
+    }
+
+    .badge-mantenimiento {
+        background: #f1f5f9;
+        color: #475569;
+        padding: 8px 15px;
+        border-radius: 20px;
+    }
+
+    .search-box {
+        border-radius: 15px;
+        height: 55px;
+    }
+
+</style>
+
+<div class="container-fluid p-4">
+
+    <div class="mb-4">
+        <small class="text-muted">
+            OPERACIONES / FLOTA
+        </small>
+
+        <h1 class="page-title">
+            Gestión de Unidades de Transporte
+        </h1>
+    </div>
+
+    @if (TempData["MensajeError"] != null)
+    {
+        <div class="alert-integridad mb-4">
+            <strong>Restricción Técnica de Integridad</strong>
+            <br />
+            @TempData["MensajeError"]
+        </div>
+    }
+
+    @if (TempData["MensajeExito"] != null)
+    {
+        <div class="alert alert-success">
+            @TempData["MensajeExito"]
+        </div>
+    }
+
+    <div class="row g-4">
+
+        <!-- FORMULARIO -->
+
+        <div class="col-lg-4">
+
+            <div class="custom-card">
+
+                <div class="p-4">
+
+                    <h3 class="mb-4" id="tituloFormulario">
+                        Registrar Nueva Unidad
+                    </h3>
+
+                    <form id="formUnidad"
+                          method="post"
+                          action="/Unidad/Crear">
+
+                        <input type="hidden"
+                               id="placaOriginal"
+                               name="placaOriginal" />
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">
+                                Placa
+                            </label>
+
+                            <input type="text"
+                                   id="txtPlaca"
+                                   name="Placa"
+                                   class="form-control"
+                                   placeholder="ABC-1234"
+                                   required />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">
+                                Modelo
+                            </label>
+
+                            <input type="text"
+                                   id="txtModelo"
+                                   name="Modelo"
+                                   class="form-control"
+                                   placeholder="Marcopolo Paradiso"
+                                   required />
+                        </div>
+
+                        <div class="row">
+
+                            <div class="col-md-6">
+
+                                <label class="form-label fw-bold">
+                                    Año Fabricación
+                                </label>
+
+                                <input type="number"
+                                       id="txtAnio"
+                                       name="AnioFabricacion"
+                                       class="form-control"
+                                       placeholder="2024"
+                                       required />
+
+                            </div>
+
+                            <div class="col-md-6">
+
+                                <label class="form-label fw-bold">
+                                    Capacidad
+                                </label>
+
+                                <input type="number"
+                                       id="txtCapacidad"
+                                       name="CapacidadPasajeros"
+                                       class="form-control"
+                                       placeholder="54"
+                                       required />
+
+                            </div>
+
+                        </div>
+
+                        <button type="submit"
+                                id="btnGuardar"
+                                class="btn btn-azul w-100 mt-4">
+                            Guardar Unidad
+                        </button>
+
+                    </form>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- TABLA -->
+
+        <div class="col-lg-8">
+
+            <input type="text"
+                   class="form-control search-box mb-3"
+                   placeholder="🔍 Filtrar por placa o modelo..." />
+
+            <div class="custom-card">
+
+                <div class="p-3">
+
+                    <table class="table">
+
+                        <thead>
+
+                            <tr>
+                                <th>Placa</th>
+                                <th>Modelo</th>
+                                <th>Año</th>
+                                <th>Capacidad</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+
+                        </thead>
+
+                        <tbody>
+
+                            @foreach (var unidad in Model)
+                            {
+                                <tr>
+
+                                    <td>
+                                        <strong>@unidad.Placa</strong>
+                                    </td>
+
+                                    <td>@unidad.Modelo</td>
+
+                                    <td>@unidad.AnioFabricacion</td>
+
+                                    <td>@unidad.CapacidadPasajeros Pax</td>
+
+                                    <td>
+                                        <span class="badge-activo">
+                                            ● Activo
+                                        </span>
+                                    </td>
+
+                                    <td>
+
+                                        <button type="button"
+                                                class="btn btn-warning btn-sm"
+                                                onclick="editarUnidad(
+                                            '@unidad.Placa',
+                                            '@unidad.Modelo',
+                                            @unidad.AnioFabricacion,
+                                            @unidad.CapacidadPasajeros)">
+
+                                            <i class="bi bi-pencil"></i>
+
+                                        </button>
+
+                                    </td>
+
+                                </tr>
+                            }
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+
+    function editarUnidad(placa, modelo, anio, capacidad)
+    {
+        document.getElementById("txtPlaca").value = placa;
+        document.getElementById("txtModelo").value = modelo;
+        document.getElementById("txtAnio").value = anio;
+        document.getElementById("txtCapacidad").value = capacidad;
+
+        document.getElementById("placaOriginal").value = placa;
+
+        document.getElementById("tituloFormulario").innerText =
+            "Editar Unidad";
+
+        document.getElementById("btnGuardar").innerText =
+            "Guardar Cambios";
+
+        document.getElementById("formUnidad").action =
+            "/Unidad/Editar";
+    }
+
+</script>
