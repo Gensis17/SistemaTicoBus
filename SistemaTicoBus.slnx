@@ -1,3 +1,6 @@
 <Solution>
   <Project Path="SistemaTicoBus.BL/SistemaTicoBus.BL.csproj" />
+  <Project Path="SistemaTicoBus.DA/SistemaTicoBus.DA.csproj" />
+  <Project Path="SistemaTicoBus.MODEL/SistemaTicoBus.MODEL.csproj" />
+  <Project Path="SistemaTicoBus.WEB/SistemaTicoBus.WEB.csproj" />
 </Solution>
