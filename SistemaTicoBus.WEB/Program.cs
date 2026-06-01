@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
+using SistemaTicoBus.BL;
 using SistemaTicoBus.BL.Servicios;
 using SistemaTicoBus.DA.Data;
+using SistemaTicoBus.DA.Repositorios;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,8 +15,10 @@ builder.Services.Configure<EmailSettings>(
 );
 
 builder.Services.AddScoped<IEmailServicio, EmailServicio>();
+builder.Services.AddScoped<ViajeBL>();
+builder.Services.AddScoped<ViajesEnCursoBL>();
+builder.Services.AddScoped<ViajeRepositorio>(provider => new ViajeRepositorio(builder.Configuration.GetConnectionString("DefaultConnection")!));
 
-builder.Services.AddScoped<SistemaTicoBus.BL.ViajesEnCursoBL>();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer("Server=localhost\\SQLEXPRESS;Database=TicoBusDB;Trusted_Connection=True;TrustServerCertificate=True;"));

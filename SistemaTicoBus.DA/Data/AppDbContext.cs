@@ -14,7 +14,7 @@ namespace SistemaTicoBus.DA.Data
         public DbSet<Viaje> Viajes { get; set; }
         public DbSet<Pasajero> Pasajeros { get; set; }
         public DbSet<Chofer> Choferes { get; set; }
-        public DbSet<Unidad> Unidados { get; set; }
+        public DbSet<Unidad> Unidades { get; set; }
 
     }
 }
