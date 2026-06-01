@@ -14,6 +14,8 @@ builder.Services.Configure<EmailSettings>(
 
 builder.Services.AddScoped<IEmailServicio, EmailServicio>();
 
+builder.Services.AddScoped<SistemaTicoBus.BL.ViajesEnCursoBL>();
+
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer("Server=localhost\\SQLEXPRESS;Database=TicoBusDB;Trusted_Connection=True;TrustServerCertificate=True;"));
 

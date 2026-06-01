@@ -13,5 +13,8 @@ namespace SistemaTicoBus.DA.Data
         }
 
         public DbSet<Ruta> Rutas { get; set; }
+        public DbSet<SistemaTicoBus.MODEL.Entidades.Reserva> Reservas { get; set; }
+        public DbSet<SistemaTicoBus.MODEL.Entidades.Viaje> Viajes { get; set; }
+        public DbSet<Pasajero> Pasajeros { get; set; }
     }
 }
