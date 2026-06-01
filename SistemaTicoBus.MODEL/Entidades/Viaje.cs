@@ -14,7 +14,7 @@ namespace SistemaTicoBus.MODEL.Entidades
         public int IdRuta { get; set; }
 
         [Required]
-        public int IdUnidad { get; set; }
+        public string IdUnidad { get; set; } = string.Empty;
 
         [Required]
         [Display(Name = "Fecha y Hora de Salida")]
