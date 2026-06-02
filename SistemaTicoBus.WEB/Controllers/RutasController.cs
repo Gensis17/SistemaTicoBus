@@ -123,5 +123,57 @@ namespace SistemaTicoBus.WEB.Controllers
             }
             return RedirectToAction("AdminDashboard", "Account");
         }
+
+        [HttpGet]
+        public IActionResult ListadoRutas(string buscar)
+        {
+            List<Ruta> rutas = new List<Ruta>();
+
+            using (SqlConnection connection = new SqlConnection(_connectionString))
+            {
+                connection.Open();
+
+                string query = @"
+        SELECT Id, Nombre, Origen, Destino, DuracionEstimada, PrecioBase
+        FROM Rutas
+        WHERE (@buscar IS NULL
+               OR Nombre LIKE '%' + @buscar + '%'
+               OR Destino LIKE '%' + @buscar + '%')
+        ORDER BY Nombre";
+
+                using (SqlCommand command = new SqlCommand(query, connection))
+                {
+                    command.Parameters.AddWithValue(
+                        "@buscar",
+                        string.IsNullOrWhiteSpace(buscar)
+                            ? DBNull.Value
+                            : buscar);
+
+                    using (SqlDataReader reader = command.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            rutas.Add(new Ruta
+                            {
+                                Id = Convert.ToInt32(reader["Id"]),
+                                Nombre = reader["Nombre"].ToString(),
+                                Origen = reader["Origen"].ToString(),
+                                Destino = reader["Destino"].ToString(),
+                                DuracionEstimada = (TimeSpan)reader["DuracionEstimada"],
+                                PrecioBase = Convert.ToDecimal(reader["PrecioBase"])
+                            });
+                        }
+                    }
+                }
+            }
+
+            return View(rutas);
+        }
+
+        [HttpGet]
+        public IActionResult Index(string buscar)
+        {
+            return RedirectToAction("ListadoRutas", new { buscar });
+        }
     }
 }

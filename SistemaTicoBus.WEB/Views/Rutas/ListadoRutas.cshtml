@@ -49,7 +49,7 @@
                         <span class="text-sm font-medium">Registrar Pasajero</span>
                     </a>
 
-                    <a class="flex items-center gap-3 bg-[#e0f2f1] text-[#004d40] font-semibold rounded-xl px-4 py-3 transition-all duration-200" href="/Rutas/Index">
+                    <a class="flex items-center gap-3 bg-[#e0f2f1] text-[#004d40] font-semibold rounded-xl px-4 py-3 transition-all duration-200" href="/Rutas/ListadoRutas"
                         <span class="material-symbols-outlined text-[#00695c]">explore</span>
                         <span class="text-sm">Catálogo de Rutas</span>
                     </a>
@@ -85,7 +85,7 @@
                 </div>
 
                 <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm mb-6">
-                    <form method="get" action="/Rutas/Index" class="flex gap-3">
+                    <form method="get" action="/Rutas/ListadoRutas" class="flex gap-3">
                         <div class="relative flex-1">
                             <span class="material-symbols-outlined absolute left-3 top-2.5 text-gray-400 text-xl">search</span>
                             <input type="text" name="buscar" placeholder="Buscar rutas por nombre o destino..." class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" value="@Context.Request.Query["buscar"]" />

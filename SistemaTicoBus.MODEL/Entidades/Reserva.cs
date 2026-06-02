@@ -33,5 +33,7 @@ namespace SistemaTicoBus.MODEL.Entidades
 
         [ForeignKey("IdPasajero")]
         public virtual Pasajero? Pasajero { get; set; }
+
     }
+
 }

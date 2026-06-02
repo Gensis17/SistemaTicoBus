@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using SistemaTicoBus.BL;
 using SistemaTicoBus.DA.Repositorios;
 using SistemaTicoBus.MODEL.Entidades;
 
@@ -7,15 +8,15 @@ namespace SistemaTicoBus.WEB.Controllers
     public class PasajerosController : Controller
     {
         private readonly PasajeroRepositorio _repository = new PasajeroRepositorio();
+        private readonly ReservaBL _reservaBL = new ReservaBL();
 
-        // GET: /Pasajeros/ListadoPasajeros
         public IActionResult ListadoPasajeros(string buscarNombre, string identificacionEditar)
         {
-            // 1. Filtrado exclusivo por Nombre directo en la BD
+            // Filtrado exclusivo por Nombre directo en la BD
             var pasajeros = _repository.ObtenerPasajeros(buscarNombre);
             ViewBag.Busqueda = buscarNombre;
 
-            // 2. Si se presionó Editar, cargamos el pasajero para el formulario
+            // Si se presionó Editar, cargamos el pasajero para el formulario
             if (!string.IsNullOrEmpty(identificacionEditar))
             {
                 var pasajero = _repository.ObtenerPasajeroPorId(identificacionEditar);
@@ -26,11 +27,9 @@ namespace SistemaTicoBus.WEB.Controllers
             return View(pasajeros);
         }
 
-        // POST: /Pasajeros/RegistrarPasajeroGuardar
         [HttpPost]
         public IActionResult RegistrarPasajeroGuardar(Pasajero model)
         {
-            // CORREGIDO: Ahora se valida estrictamente que el Correo NO venga vacío para cumplir con la rúbrica
             if (!string.IsNullOrEmpty(model.Identificacion) &&
                 !string.IsNullOrEmpty(model.Nombre) &&
                 !string.IsNullOrEmpty(model.Apellidos) &&
@@ -54,11 +53,9 @@ namespace SistemaTicoBus.WEB.Controllers
             return RedirectToAction("ListadoPasajeros");
         }
 
-        // POST: /Pasajeros/EditarPasajeroGuardar
         [HttpPost]
         public IActionResult EditarPasajeroGuardar(Pasajero model, string idOriginal)
         {
-            // CORREGIDO: Se añade el Correo a las validaciones de edición
             if (!string.IsNullOrEmpty(model.Identificacion) &&
                 !string.IsNullOrEmpty(model.Nombre) &&
                 !string.IsNullOrEmpty(model.Apellidos) &&
@@ -77,5 +74,7 @@ namespace SistemaTicoBus.WEB.Controllers
 
             return RedirectToAction("ListadoPasajeros");
         }
+
+
     }
 }

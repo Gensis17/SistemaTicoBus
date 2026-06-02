@@ -1,0 +1,207 @@
+﻿@model List<SistemaTicoBus.MODEL.Entidades.Reserva>
+
+@{
+    Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
+}
+
+<style>
+
+    .sidebar {
+        display: none !important;
+    }
+
+    .main-content {
+        margin-left: 0 !important;
+        width: 100% !important;
+    }
+
+    .dashboard-title {
+        font-weight: 700;
+        margin-bottom: 25px;
+    }
+
+    .viaje-card {
+        background: white;
+        border-radius: 20px;
+        padding: 25px;
+        box-shadow: 0 4px 15px rgba(0,0,0,.08);
+        margin-bottom: 25px;
+    }
+
+    .estado-badge {
+        background: #59e3d8;
+        color: #083344;
+        padding: 8px 18px;
+        border-radius: 50px;
+        font-weight: 700;
+        display: inline-block;
+    }
+
+    .resumen-card {
+        background: #06142d;
+        color: white;
+        border-radius: 20px;
+        padding: 25px;
+        margin-top: 20px;
+    }
+
+    .total-pago {
+        color: #59e3d8;
+        font-size: 2rem;
+        font-weight: bold;
+    }
+
+    .info-label {
+        color: #6c757d;
+        font-size: .9rem;
+        text-transform: uppercase;
+        font-weight: 600;
+    }
+
+    .dato-principal {
+        font-size: 1.5rem;
+        font-weight: 700;
+    }
+
+    .reserva-item {
+        background: white;
+        border-radius: 15px;
+        padding: 20px;
+        box-shadow: 0 3px 10px rgba(0,0,0,.08);
+        margin-bottom: 15px;
+    }
+
+</style>
+
+<div class="container mt-4">
+
+    <h1 class="dashboard-title">
+        Mis Viajes
+    </h1>
+
+    @if (Model != null && Model.Any())
+    {
+        var actual = Model.First();
+
+        <h3 class="mb-3">Mi Viaje Actual</h3>
+
+        <div class="viaje-card">
+
+            <div class="d-flex justify-content-between align-items-center mb-4">
+
+                <div>
+                    <div class="info-label">Destino</div>
+                    <div class="dato-principal">
+                        @actual.Viaje.Ruta.Nombre
+                    </div>
+                </div>
+
+                <span class="estado-badge">
+                    @actual.Viaje.Estado
+                </span>
+
+            </div>
+
+            <div class="row">
+
+                <div class="col-md-3 mb-3">
+                    <div class="info-label">Asiento</div>
+                    <strong>@actual.NumeroAsiento</strong>
+                </div>
+
+                <div class="col-md-3 mb-3">
+                    <div class="info-label">Unidad</div>
+                    <strong>@actual.Viaje.PlacaUnidad</strong>
+                </div>
+
+                <div class="col-md-3 mb-3">
+                    <div class="info-label">Salida</div>
+                    <strong>
+                        @actual.Viaje.FechaHoraSalida.ToString("dd/MM/yyyy HH:mm")
+                    </strong>
+                </div>
+
+                <div class="col-md-3 mb-3">
+                    <div class="info-label">Llegada</div>
+                    <strong>
+                        @actual.Viaje.FechaHoraLlegadaEstimada.ToString("dd/MM/yyyy HH:mm")
+                    </strong>
+                </div>
+
+            </div>
+        </div>
+
+        <h3 class="mt-4 mb-3">
+            Resumen de Pago
+        </h3>
+
+        <div class="resumen-card">
+
+            <h4>Resumen de Pago</h4>
+
+            <hr />
+
+            <div class="d-flex justify-content-between">
+                <span>Precio Base</span>
+                <span>
+                    @actual.Viaje.Ruta.PrecioBase.ToString("C")
+                </span>
+            </div>
+
+            <br />
+
+            <div class="d-flex justify-content-between align-items-center">
+                <strong>Total Abonado</strong>
+
+                <span class="total-pago">
+                    @actual.MontoPagado.ToString("C")
+                </span>
+            </div>
+
+        </div>
+
+        <h3 class="mt-5 mb-3">
+            Mis Reservas
+        </h3>
+
+        @foreach (var item in Model)
+        {
+            <div class="reserva-item">
+
+                <div class="row">
+
+                    <div class="col-md-4">
+                        <div class="info-label">Ruta</div>
+                        <strong>@item.Viaje.Ruta.Nombre</strong>
+                    </div>
+
+                    <div class="col-md-2">
+                        <div class="info-label">Estado</div>
+                        <strong>@item.Viaje.Estado</strong>
+                    </div>
+
+                    <div class="col-md-2">
+                        <div class="info-label">Asiento</div>
+                        <strong>@item.NumeroAsiento</strong>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="info-label">Salida</div>
+                        <strong>
+                            @item.Viaje.FechaHoraSalida.ToString("dd/MM/yyyy HH:mm")
+                        </strong>
+                    </div>
+
+                </div>
+
+            </div>
+        }
+    }
+    else
+    {
+        <div class="alert alert-warning">
+            No se encontraron reservas para este usuario.
+        </div>
+    }
+
+</div>
