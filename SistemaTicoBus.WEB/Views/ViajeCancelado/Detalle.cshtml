@@ -1,0 +1,81 @@
+﻿@model SistemaTicoBus.MODEL.Entidades.ViajeCancelado
+
+@{
+    ViewData["Title"] = "Detalle del Viaje";
+    ViewData["Seccion"] = "ViajesCancelados";
+    Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
+}
+
+<div class="container mt-4">
+
+    <div class="card shadow">
+
+        <div class="card-header">
+            <h3>Detalle del Viaje Cancelado</h3>
+        </div>
+
+        <div class="card-body">
+
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <strong>Número de Viaje:</strong><br />
+                    @Model.NumeroViaje
+                </div>
+
+                <div class="col-md-4">
+                    <strong>Ruta:</strong><br />
+                    @Model.Ruta
+                </div>
+
+                <div class="col-md-4">
+                    <strong>Unidad:</strong><br />
+                    @Model.PlacaUnidad
+                </div>
+            </div>
+
+            <div class="row mb-3">
+
+                <div class="col-md-4">
+                    <strong>Chofer:</strong><br />
+                    @Model.NombreChofer
+                </div>
+
+                <div class="col-md-4">
+                    <strong>Fecha Salida:</strong><br />
+                    @Model.FechaHoraSalida.ToString("dd/MM/yyyy HH:mm")
+                </div>
+
+                <div class="col-md-4">
+                    <strong>Fecha Llegada:</strong><br />
+                    @Model.FechaHoraLlegadaEstimada.ToString("dd/MM/yyyy HH:mm")
+                </div>
+
+            </div>
+
+            <div class="row mb-3">
+
+                <div class="col-md-4">
+                    <strong>Estado:</strong><br />
+                    @Model.Estado
+                </div>
+
+                <div class="col-md-8">
+                    <strong>Motivo de Cancelación:</strong><br />
+                    @Model.MotivoCancelacion
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class="card-footer">
+            <a asp-controller="ViajeCancelado"
+               asp-action="Index"
+               class="btn btn-secondary">
+                Volver
+            </a>
+        </div>
+
+    </div>
+
+</div>
