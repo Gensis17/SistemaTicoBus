@@ -1,6 +1,8 @@
 <div align="center">
 
-<img src="https://readme-typing-svg.demolab.com?font=Fira+Code&size=32&duration=3000&pause=1000&color=0F7654&center=true&vCenter=true&width=600&lines=🚌+Sistema+TicoBus;Gestión+de+Transporte+Interurbano;Universidad+de+Costa+Rica" alt="Typing SVG" />
+# 🚌 Sistema TicoBus
+### Sistema de Gestión de Transporte Interurbano
+#### Universidad de Costa Rica
 
 <br/>
 
