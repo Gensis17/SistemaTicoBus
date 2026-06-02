@@ -15,13 +15,13 @@
     min-height: 100vh;
     border-right: 1px solid #e9ecef;
 
-    .brand-title {
+    & .brand-title {
         color: #1a2530;
         font-size: 1.5rem;
         font-weight: 700;
     }
 
-    .section-title {
+    & .section-title {
         font-size: 0.75rem;
         text-transform: uppercase;
         letter-spacing: 0.05em;
@@ -29,7 +29,7 @@
         font-weight: 700;
     }
 
-    .nav-link {
+    & .nav-link {
         color: #5a6578;
         font-weight: 500;
         padding: 0.75rem 1rem;
@@ -38,18 +38,18 @@
         display: flex;
         align-items: center;
         text-decoration: none;
-    }
 
-        .nav-link.active {
+        &.active {
             background-color: #e8f7f2;
             color: #0f7654;
             font-weight: 600;
         }
 
-        .nav-link:hover:not(.active) {
+        &:hover:not(.active) {
             background-color: #f8f9fa;
             color: #1a2530;
         }
+    }
 }
 
 .main-content {
@@ -66,12 +66,14 @@
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
-.tabla-dashboard th {
-    background-color: #f8f9fa;
-    color: #5a6578;
-    font-weight: 600;
-    text-transform: uppercase;
-    font-size: 0.8rem;
+.tabla-dashboard {
+    & th {
+        background-color: #f8f9fa;
+        color: #5a6578;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.8rem;
+    }
 }
 
 .badge-programado {
@@ -116,57 +118,16 @@
     font-size: 0.875rem;
 }
 
-.form-control {
-    border-radius: 0.5rem;
-    border: 1px solid #e9ecef;
-    padding: 0.6rem 0.9rem;
-
-    &:focus {
-        border-color: #0f7654;
-        box-shadow: 0 0 0 0.2rem rgba(15, 118, 84, 0.15);
-    }
-
-    .btn-primario {
-        background-color: #0f7654;
-        color: white;
-        border: none;
-        border-radius: 0.5rem;
-        font-weight: 600;
-        padding: 0.6rem 1.2rem;
-
-
-        &:hover {
-            background-color: #0a5c40;
-            color: white;
-        }
-    }
-
-    .btn-secundario {
-        background-color: #112233;
-        color: white;
-        border: none;
-        border-radius: 0.5rem;
-        font-weight: 600;
-        padding: 0.6rem 1.2rem;
-    }
-
-    &:hover {
-        background-color: #0a1a2a;
-        color: white;
-    }
-}
-
-.modal .form-control,
-.modal .form-select {
+.form-control,
+.form-select {
     background-color: #ffffff;
     color: #1a2530;
     border: 2px solid #e9ecef;
     border-radius: 0.5rem;
+    padding: 0.6rem 0.9rem;
     transition: border-color 0.3s ease, box-shadow 0.3s ease, transform 0.2s ease;
-}
 
-    .modal .form-control:focus,
-    .modal .form-select:focus {
+    &:focus {
         background-color: #ffffff;
         color: #1a2530;
         border-color: #0f7654;
@@ -174,3 +135,36 @@
         transform: translateY(-2px);
         outline: none;
     }
+
+    &:hover:not(:focus) {
+        border-color: #b0bec5;
+    }
+}
+
+.btn-primario {
+    background-color: #0f7654;
+    color: white;
+    border: none;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    padding: 0.6rem 1.2rem;
+
+    &:hover {
+        background-color: #0a5c40;
+        color: white;
+    }
+}
+
+.btn-secundario {
+    background-color: #112233;
+    color: white;
+    border: none;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    padding: 0.6rem 1.2rem;
+
+    &:hover {
+        background-color: #0a1a2a;
+        color: white;
+    }
+}
