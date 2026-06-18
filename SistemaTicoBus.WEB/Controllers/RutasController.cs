@@ -14,7 +14,7 @@ namespace SistemaTicoBus.WEB.Controllers
             _connectionString = configuration.GetConnectionString("DefaultConnection") ?? string.Empty;
         }
 
-        // 1. OBTENER DATOS PARA EDICIÓN 
+        // OBTENER DATOS PARA EDICIÓN
         [HttpGet]
         public IActionResult ObtenerRuta(int id)
         {
@@ -39,14 +39,13 @@ namespace SistemaTicoBus.WEB.Controllers
                     }
                 }
             }
-
             return RedirectToAction("AdminDashboard", "Account");
         }
 
-        // 2. EDITAR RUTA 
+        // EDITAR RUTA
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Editar(Ruta model)
+        public IActionResult Editar(int id, string nombre, string origen, string destino, string duracion, decimal precioBase)
         {
             string? rol = HttpContext.Session.GetString("Rol");
             if (rol != "Administrador")
@@ -55,28 +54,45 @@ namespace SistemaTicoBus.WEB.Controllers
                 return RedirectToAction("AdminDashboard", "Account");
             }
 
+            // Validar precio positivo
+            if (precioBase <= 0)
+            {
+                TempData["MensajeError"] = "El precio base debe ser mayor a cero.";
+                return RedirectToAction("AdminDashboard", "Account");
+            }
+
+            if (!TimeSpan.TryParse(duracion, out TimeSpan duracionParsed))
+            {
+                TempData["MensajeError"] = "El formato de duración no es válido. Use hh:mm (ejemplo: 01:30).";
+                return RedirectToAction("AdminDashboard", "Account");
+            }
+
             using (SqlConnection connection = new SqlConnection(_connectionString))
             {
                 connection.Open();
-                string query = @"UPDATE Rutas SET Nombre = @Nombre, Origen = @Origen, Destino = @Destino, 
-                                 DuracionEstimada = @DuracionEstimada, PrecioBase = @PrecioBase WHERE Id = @Id";
+                string query = @"UPDATE Rutas 
+                                 SET Nombre = @Nombre, Origen = @Origen, Destino = @Destino,
+                                     DuracionEstimada = @DuracionEstimada, PrecioBase = @PrecioBase 
+                                 WHERE Id = @Id";
 
                 using (SqlCommand command = new SqlCommand(query, connection))
                 {
-                    command.Parameters.AddWithValue("@Id", model.Id);
-                    command.Parameters.AddWithValue("@Nombre", model.Nombre);
-                    command.Parameters.AddWithValue("@Origen", model.Origen);
-                    command.Parameters.AddWithValue("@Destino", model.Destino);
-                    command.Parameters.AddWithValue("@DuracionEstimada", model.DuracionEstimada);
-                    command.Parameters.AddWithValue("@PrecioBase", model.PrecioBase);
+                    command.Parameters.AddWithValue("@Id", id);
+                    command.Parameters.AddWithValue("@Nombre", nombre);
+                    command.Parameters.AddWithValue("@Origen", origen);
+                    command.Parameters.AddWithValue("@Destino", destino);
+                    command.Parameters.AddWithValue("@DuracionEstimada", duracionParsed);
+                    command.Parameters.AddWithValue("@PrecioBase", precioBase);
 
                     command.ExecuteNonQuery();
                 }
             }
+
+            TempData["MensajeExito"] = "Ruta actualizada correctamente.";
             return RedirectToAction("AdminDashboard", "Account");
         }
 
-        // 3. CREAR RUTA 
+        // CREAR RUTA 
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult Crear(string nombre, string origen, string destino, string duracion, decimal precioBase)
@@ -84,7 +100,18 @@ namespace SistemaTicoBus.WEB.Controllers
             if (HttpContext.Session.GetString("Rol") != "Administrador")
                 return RedirectToAction("AdminDashboard", "Account");
 
-            TimeSpan.TryParse(duracion, out TimeSpan duracionParsed);
+            // Validar precio positivo
+            if (precioBase <= 0)
+            {
+                TempData["MensajeError"] = "El precio base debe ser mayor a cero.";
+                return RedirectToAction("AdminDashboard", "Account");
+            }
+
+            if (!TimeSpan.TryParse(duracion, out TimeSpan duracionParsed))
+            {
+                TempData["MensajeError"] = "El formato de duración no es válido. Use hh:mm (ejemplo: 01:30).";
+                return RedirectToAction("AdminDashboard", "Account");
+            }
 
             using (SqlConnection connection = new SqlConnection(_connectionString))
             {
@@ -100,10 +127,12 @@ namespace SistemaTicoBus.WEB.Controllers
                     command.ExecuteNonQuery();
                 }
             }
+
+            TempData["MensajeExito"] = "Ruta registrada correctamente.";
             return RedirectToAction("AdminDashboard", "Account");
         }
 
-        // 4. ELIMINAR RUTA 
+        // ELIMINAR RUTA
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult EliminarRuta(int id)
@@ -132,22 +161,18 @@ namespace SistemaTicoBus.WEB.Controllers
             using (SqlConnection connection = new SqlConnection(_connectionString))
             {
                 connection.Open();
-
                 string query = @"
-        SELECT Id, Nombre, Origen, Destino, DuracionEstimada, PrecioBase
-        FROM Rutas
-        WHERE (@buscar IS NULL
-               OR Nombre LIKE '%' + @buscar + '%'
-               OR Destino LIKE '%' + @buscar + '%')
-        ORDER BY Nombre";
+                    SELECT Id, Nombre, Origen, Destino, DuracionEstimada, PrecioBase
+                    FROM Rutas
+                    WHERE (@buscar IS NULL
+                           OR Nombre LIKE '%' + @buscar + '%'
+                           OR Destino LIKE '%' + @buscar + '%')
+                    ORDER BY Nombre";
 
                 using (SqlCommand command = new SqlCommand(query, connection))
                 {
-                    command.Parameters.AddWithValue(
-                        "@buscar",
-                        string.IsNullOrWhiteSpace(buscar)
-                            ? DBNull.Value
-                            : buscar);
+                    command.Parameters.AddWithValue("@buscar",
+                        string.IsNullOrWhiteSpace(buscar) ? (object)DBNull.Value : buscar);
 
                     using (SqlDataReader reader = command.ExecuteReader())
                     {

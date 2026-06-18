@@ -1,207 +1,497 @@
 ﻿@model List<SistemaTicoBus.MODEL.Entidades.Reserva>
-
+@using Microsoft.AspNetCore.Http
 @{
-    Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
+    Layout = null;
+    string nombreUsuario = Context.Session.GetString("NombreUsuario") ?? "pasajero";
 }
 
-<style>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mis Viajes - TicoBus</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" />
 
-    .sidebar {
-        display: none !important;
-    }
+    <style>
+            body {
+                background-color: #f4f6f8;
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                font-size: 0.875rem;
+            }
 
-    .main-content {
-        margin-left: 0 !important;
-        width: 100% !important;
-    }
+            .top-header {
+                background-color: #112233;
+                color: white;
+                padding: 0.65rem 1.5rem;
+            }
 
-    .dashboard-title {
-        font-weight: 700;
-        margin-bottom: 25px;
-    }
+            .sidebar {
+                background-color: #ffffff;
+                min-height: 100vh;
+                border-right: 1px solid #e9ecef;
+            }
 
-    .viaje-card {
-        background: white;
-        border-radius: 20px;
-        padding: 25px;
-        box-shadow: 0 4px 15px rgba(0,0,0,.08);
-        margin-bottom: 25px;
-    }
+            .brand-title {
+                color: #1a2530;
+                font-size: 1.2rem;
+                font-weight: 700;
+            }
 
-    .estado-badge {
-        background: #59e3d8;
-        color: #083344;
-        padding: 8px 18px;
-        border-radius: 50px;
-        font-weight: 700;
-        display: inline-block;
-    }
+            .section-title {
+                font-size: 0.7rem;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+                color: #9097a3;
+                font-weight: 700;
+            }
 
-    .resumen-card {
-        background: #06142d;
-        color: white;
-        border-radius: 20px;
-        padding: 25px;
-        margin-top: 20px;
-    }
+            .sidebar .nav-link {
+                color: #5a6578;
+                font-weight: 500;
+                font-size: 0.82rem;
+                padding: 0.65rem 1rem;
+                border-radius: 0.5rem;
+                margin-bottom: 0.2rem;
+                display: flex;
+                align-items: center;
+                text-decoration: none;
+            }
 
-    .total-pago {
-        color: #59e3d8;
-        font-size: 2rem;
-        font-weight: bold;
-    }
+                .sidebar .nav-link.active {
+                    background-color: #e0f2f1;
+                    color: #004d40;
+                    font-weight: 600;
+                }
 
-    .info-label {
-        color: #6c757d;
-        font-size: .9rem;
-        text-transform: uppercase;
-        font-weight: 600;
-    }
+                .sidebar .nav-link:hover:not(.active) {
+                    background-color: #f8f9fa;
+                    color: #1a2530;
+                }
 
-    .dato-principal {
-        font-size: 1.5rem;
-        font-weight: 700;
-    }
+            .dash-card {
+                background: #ffffff;
+                border-radius: 0.85rem;
+                border: 1px solid #e9ecef;
+                padding: 1.25rem;
+                margin-bottom: 1rem;
+            }
 
-    .reserva-item {
-        background: white;
-        border-radius: 15px;
-        padding: 20px;
-        box-shadow: 0 3px 10px rgba(0,0,0,.08);
-        margin-bottom: 15px;
-    }
+            .dash-card-dark {
+                background: #06142d;
+                color: white;
+                border-radius: 0.85rem;
+                padding: 1.25rem;
+                margin-bottom: 1rem;
+            }
 
-</style>
+            .perfil-hero {
+                background: linear-gradient(135deg, #0f3460 0%, #112233 100%);
+                color: white;
+                border-radius: 0.85rem;
+                padding: 1.5rem;
+                margin-bottom: 1rem;
+            }
 
-<div class="container mt-4">
+            .avatar-circle {
+                width: 52px;
+                height: 52px;
+                background: rgba(255,255,255,0.15);
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 1.5rem;
+                flex-shrink: 0;
+            }
 
-    <h1 class="dashboard-title">
-        Mis Viajes
-    </h1>
+            .rol-badge {
+                background: #59e3d8;
+                color: #083344;
+                font-size: 0.68rem;
+                font-weight: 700;
+                padding: 2px 10px;
+                border-radius: 20px;
+                display: inline-block;
+                margin-top: 4px;
+            }
 
-    @if (Model != null && Model.Any())
-    {
-        var actual = Model.First();
+            .info-label {
+                color: #6c757d;
+                font-size: 0.7rem;
+                text-transform: uppercase;
+                font-weight: 700;
+                letter-spacing: 0.04em;
+                margin-bottom: 2px;
+            }
 
-        <h3 class="mb-3">Mi Viaje Actual</h3>
+            .info-value {
+                font-weight: 600;
+                font-size: 0.85rem;
+                color: #1a2530;
+            }
 
-        <div class="viaje-card">
+            .viaje-card {
+                background: white;
+                border-radius: 0.85rem;
+                border: 1px solid #e9ecef;
+                padding: 1.25rem;
+                margin-bottom: 0.75rem;
+            }
 
-            <div class="d-flex justify-content-between align-items-center mb-4">
+            .estado-badge {
+                background: #59e3d8;
+                color: #083344;
+                padding: 5px 14px;
+                border-radius: 50px;
+                font-weight: 700;
+                font-size: 0.75rem;
+                display: inline-block;
+            }
 
+                .estado-badge.pendiente {
+                    background: #fef3c7;
+                    color: #92400e;
+                }
+
+                .estado-badge.cancelado {
+                    background: #fee2e2;
+                    color: #991b1b;
+                }
+
+            .total-pago {
+                color: #59e3d8;
+                font-size: 1.5rem;
+                font-weight: 700;
+            }
+
+            .clave-section {
+                background: white;
+                border-radius: 0.85rem;
+                border: 1px solid #e9ecef;
+                padding: 1.25rem;
+            }
+
+            .clave-header {
+                display: flex;
+                align-items: center;
+                gap: 0.6rem;
+                margin-bottom: 1rem;
+                padding-bottom: 0.75rem;
+                border-bottom: 1px solid #f1f3f5;
+            }
+
+            .clave-icon {
+                width: 36px;
+                height: 36px;
+                background: #e0f2f1;
+                border-radius: 8px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: #006a62;
+                font-size: 1rem;
+                flex-shrink: 0;
+            }
+
+            .btn-ticobus {
+                background-color: #006a62;
+                color: white;
+                font-weight: 600;
+                font-size: 0.82rem;
+                border-radius: 0.5rem;
+                padding: 0.6rem 1rem;
+                border: none;
+                width: 100%;
+                transition: background-color 0.2s;
+            }
+
+                .btn-ticobus:hover {
+                    background-color: #004d40;
+                    color: white;
+                }
+
+            .form-label {
+                font-size: 0.72rem;
+                font-weight: 700;
+                color: #6c757d;
+                text-transform: uppercase;
+                letter-spacing: 0.04em;
+            }
+
+            .form-control {
+                font-size: 0.82rem;
+                border-radius: 0.45rem;
+            }
+
+                .form-control[readonly] {
+                    background-color: #f1f5f9;
+                    color: #475569;
+                    cursor: not-allowed;
+                }
+
+            h5.section-heading {
+                font-size: 0.92rem;
+                font-weight: 700;
+                color: #1a2530;
+                margin-bottom: 0.75rem;
+            }
+    </style>
+</head>
+<body>
+
+    <div class="container-fluid p-0">
+
+        <div class="row g-0 top-header align-items-center shadow-sm">
+            <div class="col-6 d-flex align-items-center">
+                <span class="fw-bold" style="font-size: 1rem;">TicoBus</span>
+                <span class="mx-3 text-secondary">|</span>
+                <span class="text-muted text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.05em;">Portal Pasajero</span>
+            </div>
+            <div class="col-6 text-end d-flex align-items-center justify-content-end">
+                <div class="dropdown">
+                    <button class="btn btn-link text-white text-decoration-none dropdown-toggle p-0 d-flex align-items-center"
+                            style="font-size: 0.82rem;" type="button" data-bs-toggle="dropdown">
+                        <i class="bi bi-person-circle me-2" style="font-size: 1.1rem;"></i>
+                        @nombreUsuario
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li>
+                            <a class="dropdown-item text-danger" href="/Account/Logout">
+                                <i class="bi bi-box-arrow-right me-2"></i>Cerrar Sesión
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-0">
+
+            <div class="col-md-3 col-lg-2 p-3 sidebar d-flex flex-column justify-content-between">
                 <div>
-                    <div class="info-label">Destino</div>
-                    <div class="dato-principal">
-                        @actual.Viaje.Ruta.Nombre
+                    <div class="mb-4 px-2">
+                        <h2 class="brand-title m-0">TicoBus</h2>
+                        <span class="text-muted" style="font-size: 0.72rem;">Portal del Pasajero</span>
                     </div>
+                    <div class="mb-3 px-2">
+                        <span class="section-title">Mi cuenta</span>
+                    </div>
+                    <ul class="nav flex-column mb-4">
+                        <li class="nav-item">
+                            <a href="/Account/PasajeroDashboard" class="nav-link active">
+                                <i class="bi bi-ticket-perforated me-3"></i> Mis Viajes
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#cambiarClave" class="nav-link" onclick="mostrarCambiarClave()">
+                                <i class="bi bi-lock me-3"></i> Cambiar Clave
+                            </a>
+                        </li>
+                    </ul>
                 </div>
-
-                <span class="estado-badge">
-                    @actual.Viaje.Estado
-                </span>
-
+                <div>
+                    <hr class="text-muted">
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a href="/Account/Logout" class="nav-link text-danger">
+                                <i class="bi bi-box-arrow-right me-3"></i> Cerrar Sesión
+                            </a>
+                        </li>
+                    </ul>
+                </div>
             </div>
 
-            <div class="row">
+            <div class="col-md-9 col-lg-10 p-4" style="background-color: #f4f6f8;">
 
-                <div class="col-md-3 mb-3">
-                    <div class="info-label">Asiento</div>
-                    <strong>@actual.NumeroAsiento</strong>
+                <div class="text-uppercase fw-bold mb-3" style="font-size:0.7rem; color:#9097a3; letter-spacing:0.08em;">
+                    PASAJERO ➔ MI PERFIL Y VIAJES
                 </div>
 
-                <div class="col-md-3 mb-3">
-                    <div class="info-label">Unidad</div>
-                    <strong>@actual.Viaje.PlacaUnidad</strong>
-                </div>
+                @if (TempData["MensajeExito"] != null)
+                {
+                    <div class="alert alert-success alert-dismissible fade show py-2 mb-3" role="alert" style="font-size:0.82rem;">
+                        <i class="bi bi-check-circle me-2"></i>@TempData["MensajeExito"]
+                        <button type="button" class="btn-close btn-sm" data-bs-dismiss="alert"></button>
+                    </div>
+                }
+                @if (TempData["MensajeError"] != null)
+                {
+                    <div class="alert alert-danger alert-dismissible fade show py-2 mb-3" role="alert" style="font-size:0.82rem;">
+                        <i class="bi bi-exclamation-circle me-2"></i>@TempData["MensajeError"]
+                        <button type="button" class="btn-close btn-sm" data-bs-dismiss="alert"></button>
+                    </div>
+                }
 
-                <div class="col-md-3 mb-3">
-                    <div class="info-label">Salida</div>
-                    <strong>
-                        @actual.Viaje.FechaHoraSalida.ToString("dd/MM/yyyy HH:mm")
-                    </strong>
-                </div>
+                <div class="row g-4">
 
-                <div class="col-md-3 mb-3">
-                    <div class="info-label">Llegada</div>
-                    <strong>
-                        @actual.Viaje.FechaHoraLlegadaEstimada.ToString("dd/MM/yyyy HH:mm")
-                    </strong>
-                </div>
+                    <div class="col-lg-4">
 
+                        <div class="perfil-hero mb-3">
+                            <div class="d-flex align-items-center gap-3 mb-3">
+                                <div class="avatar-circle">
+                                    <i class="bi bi-person-fill"></i>
+                                </div>
+                                <div>
+                                    <div class="fw-bold" style="font-size:1rem;">@nombreUsuario</div>
+                                    <span class="rol-badge">Pasajero</span>
+                                </div>
+                            </div>
+                            <div class="row g-2 border-top border-white border-opacity-25 pt-3">
+                                <div class="col-6">
+                                    <div style="font-size:0.65rem; color:rgba(255,255,255,0.6); text-transform:uppercase; font-weight:700;">Usuario</div>
+                                    <div style="font-size:0.82rem; font-weight:600;">@nombreUsuario</div>
+                                </div>
+                                <div class="col-6">
+                                    <div style="font-size:0.65rem; color:rgba(255,255,255,0.6); text-transform:uppercase; font-weight:700;">Reservas</div>
+                                    <div style="font-size:0.82rem; font-weight:600;">@(Model?.Count ?? 0) viaje(s)</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="clave-section" id="cambiarClave">
+                            <div class="clave-header">
+                                <div class="clave-icon">
+                                    <i class="bi bi-shield-lock"></i>
+                                </div>
+                                <div>
+                                    <div class="fw-bold" style="font-size:0.88rem; color:#1a2530;">Cambiar Clave</div>
+                                    <div style="font-size:0.7rem; color:#6c757d;">Actualiza tu contraseña de acceso</div>
+                                </div>
+                            </div>
+
+                            <form action="/Account/ChangePassword" method="post">
+                                @Html.AntiForgeryToken()
+
+                                <div class="mb-2">
+                                    <label class="form-label">Usuario</label>
+                                    <input type="text" name="Nombre" class="form-control" value="@nombreUsuario" readonly />
+                                </div>
+                                <div class="mb-2">
+                                    <label class="form-label">Clave Actual</label>
+                                    <input type="password" name="ClaveActual" class="form-control" placeholder="Tu clave actual" autocomplete="current-password" required />
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Nueva Clave</label>
+                                    <input type="password" name="NuevaClave" class="form-control" placeholder="Tu nueva clave" autocomplete="new-password" required />
+                                </div>
+                                <button type="submit" class="btn btn-ticobus">
+                                    <i class="bi bi-check-lg me-2"></i>Actualizar Clave
+                                </button>
+                            </form>
+                        </div>
+
+                    </div>
+
+                    <div class="col-lg-8">
+
+                        @if (Model != null && Model.Any())
+                        {
+                            var actual = Model.First();
+
+                            <h5 class="section-heading">
+                                <i class="bi bi-geo-alt-fill me-2 text-success"></i>Mi Viaje Actual
+                            </h5>
+
+                            <div class="viaje-card">
+                                <div class="d-flex justify-content-between align-items-start mb-3">
+                                    <div>
+                                        <div class="info-label">Destino</div>
+                                        <div class="fw-bold" style="font-size:1rem; color:#1a2530;">
+                                            @actual.Viaje.Ruta.Nombre
+                                        </div>
+                                    </div>
+                                    <span class="estado-badge @(actual.Viaje.Estado?.ToLower() == "cancelado" ? "cancelado" : actual.Viaje.Estado?.ToLower() == "pendiente" ? "pendiente" : "")">
+                                        @actual.Viaje.Estado
+                                    </span>
+                                </div>
+
+                                <div class="row g-3">
+                                    <div class="col-6 col-md-3">
+                                        <div class="info-label">Asiento</div>
+                                        <div class="info-value">@actual.NumeroAsiento</div>
+                                    </div>
+                                    <div class="col-6 col-md-3">
+                                        <div class="info-label">Unidad</div>
+                                        <div class="info-value">@actual.Viaje.PlacaUnidad</div>
+                                    </div>
+                                    <div class="col-6 col-md-3">
+                                        <div class="info-label">Salida</div>
+                                        <div class="info-value">@actual.Viaje.FechaHoraSalida.ToString("dd/MM/yyyy HH:mm")</div>
+                                    </div>
+                                    <div class="col-6 col-md-3">
+                                        <div class="info-label">Llegada est.</div>
+                                        <div class="info-value">@actual.Viaje.FechaHoraLlegadaEstimada.ToString("dd/MM/yyyy HH:mm")</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="dash-card-dark mt-2">
+                                <div class="fw-bold mb-2" style="font-size:0.88rem;">Resumen de Pago</div>
+                                <hr style="border-color:rgba(255,255,255,0.15);" />
+                                <div class="d-flex justify-content-between mb-2" style="font-size:0.82rem;">
+                                    <span style="color:rgba(255,255,255,0.7);">Precio Base</span>
+                                    <span>₡@actual.Viaje.Ruta.PrecioBase.ToString("N0")</span>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center mt-3">
+                                    <span class="fw-bold" style="font-size:0.82rem;">Total Abonado</span>
+                                    <span class="total-pago">₡@actual.MontoPagado.ToString("N0")</span>
+                                </div>
+                            </div>
+
+                            <h5 class="section-heading mt-4">
+                                <i class="bi bi-list-ul me-2 text-primary"></i>Mis Reservas
+                            </h5>
+
+                            @foreach (var item in Model)
+                            {
+                                <div class="viaje-card">
+                                    <div class="row g-2 align-items-center">
+                                        <div class="col-md-4">
+                                            <div class="info-label">Ruta</div>
+                                            <div class="info-value">@item.Viaje.Ruta.Nombre</div>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <div class="info-label">Estado</div>
+                                            <span class="estado-badge @(item.Viaje.Estado?.ToLower() == "cancelado" ? "cancelado" : item.Viaje.Estado?.ToLower() == "pendiente" ? "pendiente" : "")"
+                                                  style="font-size:0.68rem; padding:3px 10px;">
+                                                @item.Viaje.Estado
+                                            </span>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <div class="info-label">Asiento</div>
+                                            <div class="info-value">@item.NumeroAsiento</div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="info-label">Salida</div>
+                                            <div class="info-value">@item.Viaje.FechaHoraSalida.ToString("dd/MM/yyyy HH:mm")</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <div class="dash-card text-center py-5">
+                                <i class="bi bi-ticket-perforated text-muted" style="font-size:2.5rem;"></i>
+                                <p class="mt-3 text-muted fw-semibold" style="font-size:0.88rem;">
+                                    No tienes reservas registradas aún.
+                                </p>
+                            </div>
+                        }
+
+                    </div>
+                </div>
             </div>
         </div>
+    </div>
 
-        <h3 class="mt-4 mb-3">
-            Resumen de Pago
-        </h3>
-
-        <div class="resumen-card">
-
-            <h4>Resumen de Pago</h4>
-
-            <hr />
-
-            <div class="d-flex justify-content-between">
-                <span>Precio Base</span>
-                <span>
-                    @actual.Viaje.Ruta.PrecioBase.ToString("C")
-                </span>
-            </div>
-
-            <br />
-
-            <div class="d-flex justify-content-between align-items-center">
-                <strong>Total Abonado</strong>
-
-                <span class="total-pago">
-                    @actual.MontoPagado.ToString("C")
-                </span>
-            </div>
-
-        </div>
-
-        <h3 class="mt-5 mb-3">
-            Mis Reservas
-        </h3>
-
-        @foreach (var item in Model)
-        {
-            <div class="reserva-item">
-
-                <div class="row">
-
-                    <div class="col-md-4">
-                        <div class="info-label">Ruta</div>
-                        <strong>@item.Viaje.Ruta.Nombre</strong>
-                    </div>
-
-                    <div class="col-md-2">
-                        <div class="info-label">Estado</div>
-                        <strong>@item.Viaje.Estado</strong>
-                    </div>
-
-                    <div class="col-md-2">
-                        <div class="info-label">Asiento</div>
-                        <strong>@item.NumeroAsiento</strong>
-                    </div>
-
-                    <div class="col-md-4">
-                        <div class="info-label">Salida</div>
-                        <strong>
-                            @item.Viaje.FechaHoraSalida.ToString("dd/MM/yyyy HH:mm")
-                        </strong>
-                    </div>
-
-                </div>
-
-            </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function mostrarCambiarClave() {
+        document.getElementById('cambiarClave').scrollIntoView({ behavior: 'smooth' });
         }
-    }
-    else
-    {
-        <div class="alert alert-warning">
-            No se encontraron reservas para este usuario.
-        </div>
-    }
-
-</div>
+    </script>
+</body>
+</html>

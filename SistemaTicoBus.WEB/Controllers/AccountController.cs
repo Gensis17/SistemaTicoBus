@@ -130,8 +130,15 @@ namespace SistemaTicoBus.WEB.Controllers
         [HttpGet]
         public IActionResult ChangePassword()
         {
-            return View(new ChangePasswordViewModel());
+            // carga el nombre de usuario desde la sesión activa
+            string nombreUsuario = HttpContext.Session.GetString("NombreUsuario") ?? string.Empty;
+
+            return View(new ChangePasswordViewModel
+            {
+                Nombre = nombreUsuario
+            });
         }
+
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -266,15 +273,15 @@ namespace SistemaTicoBus.WEB.Controllers
 
         public IActionResult PasajeroDashboard()
         {
-            string nombreReal = User.Identity.Name;
-            if (string.IsNullOrEmpty(nombreReal))
+            string nombreUsuario = HttpContext.Session.GetString("NombreUsuario") ?? string.Empty;
+
+            if (string.IsNullOrEmpty(nombreUsuario))
             {
-                nombreReal = "pasajero.kevin";
+                return RedirectToAction(nameof(Login));
             }
-            System.Diagnostics.Debug.WriteLine("DEBUG - Buscando usuario: " + nombreReal);
 
             ReservaRepositorio _repo = new ReservaRepositorio();
-            var misViajes = _repo.ObtenerReservasPorPasajero(nombreReal);
+            var misViajes = _repo.ObtenerReservasPorPasajero(nombreUsuario);
 
             return View(misViajes);
         }
