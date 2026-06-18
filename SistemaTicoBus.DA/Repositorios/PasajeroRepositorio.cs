@@ -10,7 +10,7 @@ namespace SistemaTicoBus.DA.Repositorios
     {
         private readonly string _connectionString = "Server=localhost\\SQLEXPRESS;Database=TicoBusDB;Trusted_Connection=True;TrustServerCertificate=True;";
 
-        // 1. REGISTRAR PASAJERO (Alineado con image_ebe246.png y protegido contra nulos)
+        // REGISTRAR PASAJERO
         public void RegistrarPasajero(Pasajero pasajero)
         {
             using (SqlConnection conn = new SqlConnection(_connectionString))
@@ -21,12 +21,10 @@ namespace SistemaTicoBus.DA.Repositorios
                 {
                     try
                     {
-                        // Control estricto anti-nulos para el correo electrónico
                         string correoDestino = !string.IsNullOrEmpty(pasajero.Correo)
                                                 ? pasajero.Correo
                                                 : $"pasajero_{pasajero.Identificacion}@ticobus.com";
 
-                        // A. Insertar en Usuarios usando las columnas exactas observadas en SQL Server
                         string queryUsuario = @"INSERT INTO Usuarios (NombreUsuario, Clave, Correo, RolId, IntentosFallidos) 
                                                 OUTPUT INSERTED.Id
                                                 VALUES (@NombreUsuario, @Clave, @Correo, @RolId, @IntentosFallidos)";
@@ -35,20 +33,17 @@ namespace SistemaTicoBus.DA.Repositorios
 
                         using (SqlCommand cmdUser = new SqlCommand(queryUsuario, conn, transaction))
                         {
-                            // Formato de nombre de usuario estándar del sistema
                             string usuarioFormateado = $"pasajero.{pasajero.Nombre.ToLower().Replace(" ", "")}";
 
                             cmdUser.Parameters.AddWithValue("@NombreUsuario", usuarioFormateado);
-                            cmdUser.Parameters.AddWithValue("@Clave", "Pasa123*"); // Clave por defecto de tus registros
-                            cmdUser.Parameters.AddWithValue("@Correo", correoDestino); // Validado sin nulos
-                            cmdUser.Parameters.AddWithValue("@RolId", 3); // RolId = 3 para pasajeros
+                            cmdUser.Parameters.AddWithValue("@Clave", "Pasa123*");
+                            cmdUser.Parameters.AddWithValue("@Correo", correoDestino);
+                            cmdUser.Parameters.AddWithValue("@RolId", 3);
                             cmdUser.Parameters.AddWithValue("@IntentosFallidos", 0);
 
-                            // Ejecutamos y recuperamos el Id autogenerado de Usuarios
                             nuevoUsuarioId = (int)cmdUser.ExecuteScalar();
                         }
 
-                        // B. Insertar en Pasajeros asignando el UsuarioId obtenido
                         string queryPasajero = @"INSERT INTO Pasajeros (Identificacion, Nombre, Apellidos, UsuarioId) 
                                                  VALUES (@Id, @Nombre, @Apellidos, @UsuarioId)";
 
@@ -64,6 +59,23 @@ namespace SistemaTicoBus.DA.Repositorios
 
                         transaction.Commit();
                     }
+                    catch (SqlException ex)
+                    {
+                        transaction.Rollback();
+
+                        if (ex.Number == 2627 || ex.Number == 2601)
+                        {
+                            if (ex.Message.Contains("Correo") || ex.Message.Contains("correo") || ex.Message.Contains("UQ_Usuarios"))
+                                throw new InvalidOperationException("El correo electrónico ingresado ya está registrado en el sistema.");
+
+                            if (ex.Message.Contains("Identificacion") || ex.Message.Contains("Pasajeros") || ex.Message.Contains("PK_"))
+                                throw new InvalidOperationException("La cédula ingresada ya está registrada en el sistema.");
+
+                            throw new InvalidOperationException("Ya existe un pasajero registrado con esa cédula o correo electrónico.");
+                        }
+
+                        throw; 
+                    }
                     catch (Exception)
                     {
                         transaction.Rollback();
@@ -73,7 +85,7 @@ namespace SistemaTicoBus.DA.Repositorios
             }
         }
 
-        // 2. OBTENER LISTADO (Con INNER JOIN para extraer el correo guardado en Usuarios)
+        // OBTENER LISTADO
         public List<Pasajero> ObtenerPasajeros(string buscarNombre = null)
         {
             var lista = new List<Pasajero>();
@@ -88,22 +100,18 @@ namespace SistemaTicoBus.DA.Repositorios
                                  WHERE 1=1";
 
                 if (!string.IsNullOrEmpty(buscarNombre))
-                {
                     query += " AND p.Nombre LIKE @Buscar";
-                }
 
                 using (SqlCommand cmd = new SqlCommand(query, conn))
                 {
                     if (!string.IsNullOrEmpty(buscarNombre))
-                    {
                         cmd.Parameters.AddWithValue("@Buscar", "%" + buscarNombre + "%");
-                    }
 
                     using (SqlDataReader reader = cmd.ExecuteReader())
                     {
                         while (reader.Read())
                         {
-                            lista.Add(new List<Pasajero>.Enumerator().Current ?? new Pasajero
+                            lista.Add(new Pasajero
                             {
                                 Identificacion = reader["Identificacion"].ToString(),
                                 Nombre = reader["Nombre"].ToString(),
@@ -117,7 +125,7 @@ namespace SistemaTicoBus.DA.Repositorios
             return lista;
         }
 
-        // 3. OBTENER POR ID
+        //OBTENER POR ID
         public Pasajero ObtenerPasajeroPorId(string identificacion)
         {
             using (SqlConnection conn = new SqlConnection(_connectionString))
@@ -149,7 +157,7 @@ namespace SistemaTicoBus.DA.Repositorios
             return null;
         }
 
-        // 4. EDITAR PASAJERO
+        // EDITAR PASAJERO
         public void EditarPasajero(Pasajero pasajero, string idOriginal)
         {
             using (SqlConnection conn = new SqlConnection(_connectionString))
@@ -159,7 +167,6 @@ namespace SistemaTicoBus.DA.Repositorios
                 {
                     try
                     {
-                        // Modificar Correo en la tabla Usuarios
                         string queryUser = @"UPDATE Usuarios 
                                              SET Correo = @Correo 
                                              WHERE Id = (SELECT UsuarioId FROM Pasajeros WHERE Identificacion = @IdOriginal)";
@@ -171,7 +178,6 @@ namespace SistemaTicoBus.DA.Repositorios
                             cmdUser.ExecuteNonQuery();
                         }
 
-                        // Modificar datos base en la tabla Pasajeros
                         string queryPasajero = @"UPDATE Pasajeros 
                                                  SET Identificacion = @NuevaId, Nombre = @Nombre, Apellidos = @Apellidos 
                                                  WHERE Identificacion = @IdOriginal";
@@ -186,6 +192,23 @@ namespace SistemaTicoBus.DA.Repositorios
                         }
 
                         transaction.Commit();
+                    }
+                    catch (SqlException ex)
+                    {
+                        transaction.Rollback();
+
+                        if (ex.Number == 2627 || ex.Number == 2601)
+                        {
+                            if (ex.Message.Contains("Correo") || ex.Message.Contains("UQ_Usuarios"))
+                                throw new InvalidOperationException("El correo electrónico ya está en uso por otro pasajero.");
+
+                            if (ex.Message.Contains("Identificacion") || ex.Message.Contains("PK_"))
+                                throw new InvalidOperationException("La cédula ingresada ya está registrada para otro pasajero.");
+
+                            throw new InvalidOperationException("Ya existe un pasajero con esa cédula o correo electrónico.");
+                        }
+
+                        throw;
                     }
                     catch (Exception)
                     {

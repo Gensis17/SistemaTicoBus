@@ -12,16 +12,14 @@ namespace SistemaTicoBus.WEB.Controllers
 
         public IActionResult ListadoPasajeros(string buscarNombre, string identificacionEditar)
         {
-            // Filtrado exclusivo por Nombre directo en la BD
             var pasajeros = _repository.ObtenerPasajeros(buscarNombre);
             ViewBag.Busqueda = buscarNombre;
 
-            // Si se presionó Editar, cargamos el pasajero para el formulario
             if (!string.IsNullOrEmpty(identificacionEditar))
             {
                 var pasajero = _repository.ObtenerPasajeroPorId(identificacionEditar);
                 ViewBag.PasajeroEditar = pasajero;
-                ViewBag.IdOriginal = identificacionEditar; // Guardamos la cédula original antes de ser editada
+                ViewBag.IdOriginal = identificacionEditar;
             }
 
             return View(pasajeros);
@@ -35,19 +33,27 @@ namespace SistemaTicoBus.WEB.Controllers
                 !string.IsNullOrEmpty(model.Apellidos) &&
                 !string.IsNullOrEmpty(model.Correo))
             {
-                // Mantenemos la clave por defecto que usa tu base de datos para evitar conflictos de logueo
-                model.Clave = "Pasa123*";
-                model.Rol = "Pasajero";
+                try
+                {
+                    model.Clave = "Pasa123*";
+                    model.Rol = "Pasajero";
 
-                // Se envía el modelo completo con el correo ingresado por el usuario
-                _repository.RegistrarPasajero(model);
+                    _repository.RegistrarPasajero(model);
 
-                TempData["CorreoSimulado"] = $"Pasajero registrado con éxito. Cuenta de acceso creada para el correo: {model.Correo}";
+                    TempData["MensajeExito"] = $"Pasajero registrado con éxito. Cuenta creada para: {model.Correo}";
+                }
+                catch (InvalidOperationException ex)
+                {
+                    TempData["MensajeError"] = ex.Message;
+                }
+                catch (Exception)
+                {
+                    TempData["MensajeError"] = "Ocurrió un error inesperado al registrar el pasajero. Intente de nuevo.";
+                }
             }
             else
             {
-                // Alerta por si falta rellenar algún espacio obligatorio
-                TempData["CorreoSimulado"] = "⚠️ Error: Todos los campos son requeridos (Identificación, Nombre, Apellidos y Correo).";
+                TempData["MensajeError"] = "Todos los campos son requeridos: Identificación, Nombre, Apellidos y Correo.";
             }
 
             return RedirectToAction("ListadoPasajeros");
@@ -62,19 +68,26 @@ namespace SistemaTicoBus.WEB.Controllers
                 !string.IsNullOrEmpty(model.Correo) &&
                 !string.IsNullOrEmpty(idOriginal))
             {
-                // Pasamos el modelo con el correo actualizado y la cédula original para aplicar los cambios en cascada
-                _repository.EditarPasajero(model, idOriginal);
-
-                TempData["CorreoSimulado"] = $"Los datos y correo del pasajero fueron actualizados con éxito.";
+                try
+                {
+                    _repository.EditarPasajero(model, idOriginal);
+                    TempData["MensajeExito"] = "Los datos del pasajero fueron actualizados con éxito.";
+                }
+                catch (InvalidOperationException ex)
+                {
+                    TempData["MensajeError"] = ex.Message;
+                }
+                catch (Exception)
+                {
+                    TempData["MensajeError"] = "Ocurrió un error inesperado al actualizar el pasajero. Intente de nuevo.";
+                }
             }
             else
             {
-                TempData["CorreoSimulado"] = "⚠️ Error: No se pudieron guardar los cambios. Verifique que no queden datos vacíos.";
+                TempData["MensajeError"] = "No se pudieron guardar los cambios. Verifique que no queden campos vacíos.";
             }
 
             return RedirectToAction("ListadoPasajeros");
         }
-
-
     }
 }
