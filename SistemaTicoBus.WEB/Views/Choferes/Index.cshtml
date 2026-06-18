@@ -136,7 +136,6 @@
 <body>
 
     <div class="container-fluid p-0">
-        <!-- Header -->
         <div class="row g-0 top-header align-items-center shadow-sm">
             <div class="col-6 d-flex align-items-center">
                 <span class="fw-bold" style="font-size: 1rem;">TicoBus</span>
@@ -159,7 +158,6 @@
         </div>
 
         <div class="row g-0">
-            <!-- Sidebar -->
             <div class="col-md-3 col-lg-2 p-3 sidebar d-flex flex-column justify-content-between">
                 <div>
                     <div class="mb-4 px-2">
@@ -211,10 +209,8 @@
                 </div>
             </div>
 
-            <!-- Contenido -->
             <div class="col-md-9 col-lg-10 p-4" style="background-color: #f4f6f8;">
 
-                <!-- Buscador con Limpiar -->
                 <div class="search-box-container p-3 mb-4 shadow-sm">
                     <form action="/Choferes/Index" method="get">
                         <div class="row align-items-center g-2">
@@ -243,7 +239,6 @@
                     </form>
                 </div>
 
-                <!-- Alertas -->
                 @if (TempData["MensajeExito"] != null)
                 {
                     <div class="alert alert-success alert-dismissible fade show py-2 mb-3" role="alert" style="font-size:0.82rem;">
@@ -260,7 +255,6 @@
                 }
 
                 <div class="row g-4">
-                    <!-- Formulario -->
                     <div class="col-xl-4 col-lg-5">
                         <div class="custom-dashboard-card shadow-sm">
                             <h4 id="formTitle" class="fs-5 fw-bold mb-3 text-dark">Registrar Nuevo Chofer</h4>
@@ -305,7 +299,6 @@
                         </div>
                     </div>
 
-                    <!-- Tabla -->
                     <div class="col-xl-8 col-lg-7">
                         <div class="custom-dashboard-card shadow-sm">
                             <h4 class="fs-5 fw-bold mb-3 text-dark">Listado de Choferes</h4>
@@ -335,7 +328,6 @@
                                                         @chofer.Correo
                                                     </td>
                                                     <td class="py-3 text-end" style="white-space:nowrap;">
-                                                        <!-- Editar — carga datos en el formulario -->
                                                         <button type="button"
                                                                 class="btn btn-sm btn-outline-warning border-0"
                                                                 title="Editar"
@@ -347,7 +339,6 @@
                                                             <i class="bi bi-pencil-square"></i>
                                                         </button>
 
-                                                        <!-- Eliminar -->
                                                         <form action="/Choferes/Delete" method="post" style="display:inline;">
                                                             @Html.AntiForgeryToken()
                                                             <input type="hidden" name="id" value="@chofer.Identificacion" />
@@ -383,14 +374,13 @@
     <script>
             function editarChofer(identificacion, nombre, apellidos, correo) {
                 document.getElementById('formTitle').innerText = "Editar Chofer";
-                // Cambia el action al endpoint de Edit, pasando la id en la URL
                 document.getElementById('formChofer').action = "/Choferes/Edit/" + identificacion;
                 document.getElementById('inputIdOriginal').value = identificacion;
                 document.getElementById('inputIdentificacion').value = identificacion;
                 document.getElementById('inputNombre').value = nombre;
                 document.getElementById('inputApellidos').value = apellidos;
 
-                // El correo no se edita (el controlador lo ignora en Edit)
+                // El correo no se edita 
                 const correoInput = document.getElementById('inputCorreo');
                 correoInput.value = correo;
                 correoInput.readOnly = true;

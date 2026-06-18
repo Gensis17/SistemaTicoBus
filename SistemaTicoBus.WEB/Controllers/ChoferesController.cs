@@ -43,7 +43,7 @@ namespace SistemaTicoBus.WEB.Controllers
                 return RedirectToAction("Login", "Account");
             }
 
-            return View(new ChoferViewModel());
+            return RedirectToAction(nameof(Index));
         }
 
         [HttpPost]
@@ -57,19 +57,20 @@ namespace SistemaTicoBus.WEB.Controllers
 
             if (!ModelState.IsValid)
             {
-                return View(model);
+                TempData["Error"] = "Todos los campos son requeridos. Verifique los datos ingresados.";
+                return RedirectToAction(nameof(Index));
             }
 
             if (ExisteChofer(model.Identificacion))
             {
-                ModelState.AddModelError("Identificacion", "Ya existe un chofer con esa identificación.");
-                return View(model);
+                TempData["Error"] = "Ya existe un chofer con esa identificación.";
+                return RedirectToAction(nameof(Index));
             }
 
             if (ExisteCorreo(model.Correo))
             {
-                ModelState.AddModelError("Correo", "Ya existe un usuario registrado con ese correo.");
-                return View(model);
+                TempData["Error"] = "Ya existe un usuario registrado con ese correo.";
+                return RedirectToAction(nameof(Index));
             }
 
             string nombreUsuario = GenerarNombreUsuario(model.Nombre, model.Apellidos);
@@ -78,18 +79,14 @@ namespace SistemaTicoBus.WEB.Controllers
             try
             {
                 CrearChoferConUsuario(model, nombreUsuario, claveGenerada);
-
                 await EnviarClaveChoferAsync(model.Correo, nombreUsuario, claveGenerada);
-
-                TempData["MensajeExito"] =
-                    $"Chofer registrado correctamente. Usuario generado: {nombreUsuario}. La clave temporal fue enviada al correo indicado.";
-
+                TempData["Exito"] = $"Chofer registrado correctamente. Usuario generado: {nombreUsuario}. La clave temporal fue enviada al correo indicado.";
                 return RedirectToAction(nameof(Index));
             }
             catch
             {
-                ModelState.AddModelError("", "Ocurrió un error al registrar el chofer.");
-                return View(model);
+                TempData["Error"] = "Ocurrió un error al registrar el chofer. Intente nuevamente.";
+                return RedirectToAction(nameof(Index));
             }
         }
 
@@ -101,19 +98,7 @@ namespace SistemaTicoBus.WEB.Controllers
                 return RedirectToAction("Login", "Account");
             }
 
-            if (string.IsNullOrWhiteSpace(id))
-            {
-                return RedirectToAction(nameof(Index));
-            }
-
-            ChoferViewModel? chofer = ObtenerChoferPorIdentificacion(id);
-
-            if (chofer == null)
-            {
-                return RedirectToAction(nameof(Index));
-            }
-
-            return View(chofer);
+            return RedirectToAction(nameof(Index));
         }
 
         [HttpPost]
@@ -134,27 +119,18 @@ namespace SistemaTicoBus.WEB.Controllers
 
             if (!ModelState.IsValid)
             {
-                ChoferViewModel? choferActual = ObtenerChoferPorIdentificacion(id);
-
-                if (choferActual != null)
-                {
-                    model.Correo = choferActual.Correo;
-                    model.NombreUsuario = choferActual.NombreUsuario;
-                }
-
-                return View(model);
+                TempData["Error"] = "Todos los campos son requeridos. Verifique los datos ingresados.";
+                return RedirectToAction(nameof(Index));
             }
 
             if (ExisteOtraIdentificacion(id, model.Identificacion))
             {
-                ModelState.AddModelError("Identificacion", "Ya existe otro chofer con esa identificación.");
-                return View(model);
+                TempData["Error"] = "Ya existe otro chofer con esa identificación.";
+                return RedirectToAction(nameof(Index));
             }
 
             ActualizarChofer(id, model);
-
-            TempData["MensajeExito"] = "Chofer actualizado correctamente.";
-
+            TempData["Exito"] = "Chofer actualizado correctamente.";
             return RedirectToAction(nameof(Index));
         }
 

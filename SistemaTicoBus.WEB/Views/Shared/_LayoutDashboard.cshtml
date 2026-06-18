@@ -22,6 +22,7 @@
                 </span>
             </div>
             <div class="col-6 text-end d-flex align-items-center justify-content-end">
+                <i class="bi bi-bell me-4" style="font-size: 1.1rem; cursor: pointer;"></i>
                 <div class="dropdown">
                     <button class="btn btn-link text-white text-decoration-none dropdown-toggle p-0 small d-flex align-items-center"
                             type="button" data-bs-toggle="dropdown">
@@ -79,7 +80,7 @@
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a asp-controller="ViajesCancelados" asp-action="Index"
+                            <a asp-controller="ViajeCancelado" asp-action="Index"
                                class="nav-link @(ViewData["Seccion"]?.ToString() == "ViajesCancelados" ? "active" : "")">
                                 <i class="bi bi-calendar-x me-3"></i> Viajes Cancelados
                             </a>
