@@ -145,9 +145,7 @@ namespace SistemaTicoBus.WEB.Controllers
         public async Task<IActionResult> ChangePassword(ChangePasswordViewModel model)
         {
             if (!ModelState.IsValid)
-            {
                 return View(model);
-            }
 
             UsuarioLogin? usuario = ObtenerUsuarioLogin(model.Nombre);
 
@@ -170,10 +168,14 @@ namespace SistemaTicoBus.WEB.Controllers
             }
 
             ActualizarClave(usuario.Id, model.NuevaClave);
-
             await EnviarCorreoCambioClaveAsync(usuario.Correo, usuario.NombreUsuario);
 
             TempData["MensajeExito"] = "La clave fue actualizada correctamente.";
+            if (usuario.Rol == RolChofer)
+                return RedirectToAction(nameof(ChoferDashboard));
+
+            if (usuario.Rol == RolPasajero)
+                return RedirectToAction(nameof(PasajeroDashboard));
 
             return RedirectToAction(nameof(ChangePassword));
         }
