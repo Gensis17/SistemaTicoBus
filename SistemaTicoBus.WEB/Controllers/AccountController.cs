@@ -175,7 +175,7 @@ namespace SistemaTicoBus.WEB.Controllers
                 return RedirectToAction(nameof(ChoferDashboard));
 
             if (usuario.Rol == RolPasajero)
-                return RedirectToAction(nameof(PasajeroDashboard));
+                return RedirectToAction(nameof(PasajeroDashboard), new { tab = "viajes" });
 
             return RedirectToAction(nameof(ChangePassword));
         }
@@ -273,18 +273,17 @@ namespace SistemaTicoBus.WEB.Controllers
             return View(model);
         }
 
-        public IActionResult PasajeroDashboard()
+        public IActionResult PasajeroDashboard(string tab = "viajes")
         {
             string nombreUsuario = HttpContext.Session.GetString("NombreUsuario") ?? string.Empty;
 
             if (string.IsNullOrEmpty(nombreUsuario))
-            {
                 return RedirectToAction(nameof(Login));
-            }
 
             ReservaRepositorio _repo = new ReservaRepositorio();
             var misViajes = _repo.ObtenerReservasPorPasajero(nombreUsuario);
 
+            ViewBag.Tab = tab; 
             return View(misViajes);
         }
 
