@@ -3,6 +3,7 @@ using Microsoft.Data.SqlClient;
 using SistemaTicoBus.BL.Servicios;
 using SistemaTicoBus.WEB.Models;
 using System.Data;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace SistemaTicoBus.WEB.Controllers
@@ -28,11 +29,18 @@ namespace SistemaTicoBus.WEB.Controllers
                 return RedirectToAction("Login", "Account");
             }
 
-            List<ChoferViewModel> choferes = ObtenerChoferes(busqueda);
-
-            ViewBag.Busqueda = busqueda;
-
-            return View(choferes);
+            try
+            {
+                List<ChoferViewModel> choferes = ObtenerChoferes(busqueda);
+                ViewBag.Busqueda = busqueda;
+                return View(choferes);
+            }
+            catch (SqlException)
+            {
+                TempData["MensajeError"] = "No se pudieron cargar los choferes. Verifique la conexión con la base de datos.";
+                ViewBag.Busqueda = busqueda;
+                return View(new List<ChoferViewModel>());
+            }
         }
 
         [HttpGet]
@@ -55,37 +63,49 @@ namespace SistemaTicoBus.WEB.Controllers
                 return RedirectToAction("Login", "Account");
             }
 
+            NormalizarChofer(model);
+
             if (!ModelState.IsValid)
             {
-                TempData["Error"] = "Todos los campos son requeridos. Verifique los datos ingresados.";
+                TempData["MensajeError"] = "Verifique los datos del chofer. Todos los campos son requeridos y el correo debe tener formato válido.";
                 return RedirectToAction(nameof(Index));
             }
-
-            if (ExisteChofer(model.Identificacion))
-            {
-                TempData["Error"] = "Ya existe un chofer con esa identificación.";
-                return RedirectToAction(nameof(Index));
-            }
-
-            if (ExisteCorreo(model.Correo))
-            {
-                TempData["Error"] = "Ya existe un usuario registrado con ese correo.";
-                return RedirectToAction(nameof(Index));
-            }
-
-            string nombreUsuario = GenerarNombreUsuario(model.Nombre, model.Apellidos);
-            string claveGenerada = GenerarClaveAleatoria();
 
             try
             {
+                if (ExisteChofer(model.Identificacion))
+                {
+                    TempData["MensajeError"] = "Ya existe un chofer con esa identificación.";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                if (ExisteCorreo(model.Correo))
+                {
+                    TempData["MensajeError"] = "Ya existe un usuario registrado con ese correo.";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                string nombreUsuario = GenerarNombreUsuario(model.Nombre, model.Apellidos);
+                string claveGenerada = GenerarClaveAleatoria();
+
                 CrearChoferConUsuario(model, nombreUsuario, claveGenerada);
-                await EnviarClaveChoferAsync(model.Correo, nombreUsuario, claveGenerada);
-                TempData["Exito"] = $"Chofer registrado correctamente. Usuario generado: {nombreUsuario}. La clave temporal fue enviada al correo indicado.";
+
+                bool correoEnviado = await IntentarEnviarClaveChoferAsync(model.Correo, nombreUsuario, claveGenerada);
+
+                TempData["MensajeExito"] = correoEnviado
+                    ? $"Chofer registrado correctamente. Usuario generado: {nombreUsuario}. La clave temporal fue enviada por Mailtrap."
+                    : $"Chofer registrado correctamente. Usuario generado: {nombreUsuario}. No se pudo enviar el correo; revise Mailtrap.";
+
                 return RedirectToAction(nameof(Index));
             }
-            catch
+            catch (SqlException ex)
             {
-                TempData["Error"] = "Ocurrió un error al registrar el chofer. Intente nuevamente.";
+                TempData["MensajeError"] = ObtenerMensajeSqlChofer(ex);
+                return RedirectToAction(nameof(Index));
+            }
+            catch (Exception)
+            {
+                TempData["MensajeError"] = "Ocurrió un error al registrar el chofer. Intente nuevamente.";
                 return RedirectToAction(nameof(Index));
             }
         }
@@ -112,26 +132,53 @@ namespace SistemaTicoBus.WEB.Controllers
 
             if (string.IsNullOrWhiteSpace(id))
             {
+                TempData["MensajeError"] = "No se recibió la identificación actual del chofer.";
                 return RedirectToAction(nameof(Index));
             }
 
+            NormalizarChofer(model);
+
             ModelState.Remove(nameof(ChoferViewModel.Correo));
+            ModelState.Remove(nameof(ChoferViewModel.NombreUsuario));
+            ModelState.Remove(nameof(ChoferViewModel.ClaveGenerada));
 
             if (!ModelState.IsValid)
             {
-                TempData["Error"] = "Todos los campos son requeridos. Verifique los datos ingresados.";
+                TempData["MensajeError"] = "Verifique los datos del chofer. Identificación, nombre y apellidos son requeridos.";
                 return RedirectToAction(nameof(Index));
             }
 
-            if (ExisteOtraIdentificacion(id, model.Identificacion))
+            try
             {
-                TempData["Error"] = "Ya existe otro chofer con esa identificación.";
+                ChoferViewModel? choferActual = ObtenerChoferPorIdentificacion(id);
+
+                if (choferActual == null)
+                {
+                    TempData["MensajeError"] = "El chofer que intenta editar ya no existe.";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                if (ExisteOtraIdentificacion(id, model.Identificacion))
+                {
+                    TempData["MensajeError"] = "Ya existe otro chofer con esa identificación.";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                ActualizarChofer(id, model);
+
+                TempData["MensajeExito"] = "Chofer actualizado correctamente.";
                 return RedirectToAction(nameof(Index));
             }
-
-            ActualizarChofer(id, model);
-            TempData["Exito"] = "Chofer actualizado correctamente.";
-            return RedirectToAction(nameof(Index));
+            catch (SqlException ex)
+            {
+                TempData["MensajeError"] = ObtenerMensajeSqlChofer(ex);
+                return RedirectToAction(nameof(Index));
+            }
+            catch (Exception)
+            {
+                TempData["MensajeError"] = "Ocurrió un error al actualizar el chofer.";
+                return RedirectToAction(nameof(Index));
+            }
         }
 
         [HttpPost]
@@ -145,27 +192,47 @@ namespace SistemaTicoBus.WEB.Controllers
 
             if (string.IsNullOrWhiteSpace(id))
             {
+                TempData["MensajeError"] = "No se recibió la identificación del chofer a eliminar.";
                 return RedirectToAction(nameof(Index));
             }
 
-            if (ChoferTieneViajes(id))
+            try
             {
-                TempData["MensajeError"] = "No se puede eliminar el chofer porque tiene viajes registrados.";
+                if (ChoferTieneViajes(id))
+                {
+                    TempData["MensajeError"] = "No se puede eliminar el chofer porque tiene viajes registrados.";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                EliminarChoferYUsuario(id);
+
+                TempData["MensajeExito"] = "Chofer eliminado correctamente.";
                 return RedirectToAction(nameof(Index));
             }
-
-            EliminarChoferYUsuario(id);
-
-            TempData["MensajeExito"] = "Chofer eliminado correctamente.";
-
-            return RedirectToAction(nameof(Index));
+            catch (SqlException ex)
+            {
+                TempData["MensajeError"] = ObtenerMensajeSqlChofer(ex);
+                return RedirectToAction(nameof(Index));
+            }
+            catch (Exception)
+            {
+                TempData["MensajeError"] = "Ocurrió un error al eliminar el chofer.";
+                return RedirectToAction(nameof(Index));
+            }
         }
 
         private bool UsuarioEsAdministrador()
         {
             string? rol = HttpContext.Session.GetString("Rol");
-
             return rol == RolAdministrador;
+        }
+
+        private void NormalizarChofer(ChoferViewModel model)
+        {
+            model.Identificacion = model.Identificacion?.Trim() ?? string.Empty;
+            model.Nombre = model.Nombre?.Trim() ?? string.Empty;
+            model.Apellidos = model.Apellidos?.Trim() ?? string.Empty;
+            model.Correo = model.Correo?.Trim() ?? string.Empty;
         }
 
         private List<ChoferViewModel> ObtenerChoferes(string? busqueda)
@@ -217,10 +284,7 @@ namespace SistemaTicoBus.WEB.Controllers
             return choferes;
         }
 
-        private void CrearChoferConUsuario(
-            ChoferViewModel model,
-            string nombreUsuario,
-            string claveGenerada)
+        private void CrearChoferConUsuario(ChoferViewModel model, string nombreUsuario, string claveGenerada)
         {
             using (SqlConnection connection = new SqlConnection(_connectionString))
             {
@@ -231,16 +295,7 @@ namespace SistemaTicoBus.WEB.Controllers
                     try
                     {
                         int rolChoferId = ObtenerRolChoferId(connection, transaction);
-
-                        int usuarioId = CrearUsuarioChofer(
-                            connection,
-                            transaction,
-                            nombreUsuario,
-                            claveGenerada,
-                            model.Correo,
-                            rolChoferId
-                        );
-
+                        int usuarioId = CrearUsuarioChofer(connection, transaction, nombreUsuario, claveGenerada, model.Correo, rolChoferId);
                         CrearChofer(connection, transaction, model, usuarioId);
 
                         transaction.Commit();
@@ -284,6 +339,11 @@ namespace SistemaTicoBus.WEB.Controllers
         {
             int usuarioId = ObtenerUsuarioIdDeChofer(identificacion);
 
+            if (usuarioId == 0)
+            {
+                throw new InvalidOperationException("No se encontró el usuario asociado al chofer.");
+            }
+
             using (SqlConnection connection = new SqlConnection(_connectionString))
             {
                 connection.Open();
@@ -319,7 +379,7 @@ namespace SistemaTicoBus.WEB.Controllers
             }
         }
 
-        private async Task EnviarClaveChoferAsync(string correo, string nombreUsuario, string claveGenerada)
+        private async Task<bool> IntentarEnviarClaveChoferAsync(string correo, string nombreUsuario, string claveGenerada)
         {
             string asunto = "Usuario Chofer creado — TicoBus";
 
@@ -329,7 +389,15 @@ namespace SistemaTicoBus.WEB.Controllers
                 $"Clave temporal: {claveGenerada}\n\n" +
                 $"Por seguridad, cambie su clave al ingresar al sistema.";
 
-            await _emailServicio.EnviarCorreoAsync(correo, asunto, cuerpo);
+            try
+            {
+                await _emailServicio.EnviarCorreoAsync(correo, asunto, cuerpo);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         private bool ExisteChofer(string identificacion)
@@ -345,7 +413,6 @@ namespace SistemaTicoBus.WEB.Controllers
                     command.Parameters.Add("@Identificacion", SqlDbType.VarChar, 30).Value = identificacion.Trim();
 
                     int total = Convert.ToInt32(command.ExecuteScalar());
-
                     return total > 0;
                 }
             }
@@ -364,7 +431,6 @@ namespace SistemaTicoBus.WEB.Controllers
                     command.Parameters.Add("@Correo", SqlDbType.VarChar, 100).Value = correo.Trim();
 
                     int total = Convert.ToInt32(command.ExecuteScalar());
-
                     return total > 0;
                 }
             }
@@ -383,7 +449,6 @@ namespace SistemaTicoBus.WEB.Controllers
                     command.Parameters.Add("@NombreUsuario", SqlDbType.VarChar, 50).Value = nombreUsuario;
 
                     int total = Convert.ToInt32(command.ExecuteScalar());
-
                     return total > 0;
                 }
             }
@@ -407,7 +472,6 @@ namespace SistemaTicoBus.WEB.Controllers
                     command.Parameters.Add("@IdentificacionActual", SqlDbType.VarChar, 30).Value = identificacionActual.Trim();
 
                     int total = Convert.ToInt32(command.ExecuteScalar());
-
                     return total > 0;
                 }
             }
@@ -426,7 +490,6 @@ namespace SistemaTicoBus.WEB.Controllers
                     command.Parameters.Add("@ChoferId", SqlDbType.VarChar, 30).Value = identificacion.Trim();
 
                     int total = Convert.ToInt32(command.ExecuteScalar());
-
                     return total > 0;
                 }
             }
@@ -585,19 +648,28 @@ namespace SistemaTicoBus.WEB.Controllers
 
         private string GenerarClaveAleatoria()
         {
-            string caracteres = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
-            Random random = new Random();
+            const string letras = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz";
+            const string numeros = "23456789";
+            const string especiales = "*@#";
+            const string todos = letras + numeros + especiales;
+
             StringBuilder clave = new StringBuilder();
 
-            for (int i = 0; i < 8; i++)
+            clave.Append(letras[RandomNumberGenerator.GetInt32(letras.Length)]);
+            clave.Append(numeros[RandomNumberGenerator.GetInt32(numeros.Length)]);
+            clave.Append(especiales[RandomNumberGenerator.GetInt32(especiales.Length)]);
+
+            for (int i = 0; i < 7; i++)
             {
-                int posicion = random.Next(caracteres.Length);
-                clave.Append(caracteres[posicion]);
+                clave.Append(todos[RandomNumberGenerator.GetInt32(todos.Length)]);
             }
 
-            clave.Append("*1");
-
-            return clave.ToString();
+            return new string(
+                clave
+                    .ToString()
+                    .OrderBy(_ => RandomNumberGenerator.GetInt32(int.MaxValue))
+                    .ToArray()
+            );
         }
 
         private string ObtenerPrimeraPalabra(string texto)
@@ -627,6 +699,41 @@ namespace SistemaTicoBus.WEB.Controllers
                 .Replace("Ó", "o")
                 .Replace("Ú", "u")
                 .Replace("Ñ", "n");
+        }
+
+        private string ObtenerMensajeSqlChofer(SqlException ex)
+        {
+            foreach (SqlError error in ex.Errors)
+            {
+                if (error.Number == 2627 || error.Number == 2601)
+                {
+                    string mensaje = error.Message.ToLower();
+
+                    if (mensaje.Contains("choferes") || mensaje.Contains("identificacion"))
+                    {
+                        return "Ya existe un chofer con esa identificación.";
+                    }
+
+                    if (mensaje.Contains("correo"))
+                    {
+                        return "Ya existe un usuario registrado con ese correo.";
+                    }
+
+                    if (mensaje.Contains("nombreusuario"))
+                    {
+                        return "Ya existe un usuario con el nombre generado. Intente con otro nombre o apellido.";
+                    }
+
+                    return "Ya existe un registro con esos datos. Verifique la identificación, usuario o correo.";
+                }
+
+                if (error.Number == 547)
+                {
+                    return "No se puede completar la operación porque el chofer tiene datos relacionados, como viajes registrados.";
+                }
+            }
+
+            return "Ocurrió un error de base de datos al procesar el chofer.";
         }
     }
 }

@@ -10,10 +10,12 @@ namespace SistemaTicoBus.WEB.Models
 
         [Required(ErrorMessage = "El nombre es requerido.")]
         [StringLength(50, ErrorMessage = "El nombre no puede superar los 50 caracteres.")]
+        [RegularExpression(@"^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$", ErrorMessage = "El nombre solo puede contener letras.")]
         public string Nombre { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "Los apellidos son requeridos.")]
         [StringLength(50, ErrorMessage = "Los apellidos no pueden superar los 50 caracteres.")]
+        [RegularExpression(@"^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$", ErrorMessage = "Los apellidos solo pueden contener letras.")]
         public string Apellidos { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "El correo electrónico es requerido.")]
