@@ -1,10 +1,10 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 using SistemaTicoBus.BL;
-using SistemaTicoBus.BL.Servicios;
 using SistemaTicoBus.DA.Data;
 using SistemaTicoBus.DA.Repositorios;
 using SistemaTicoBus.WEB.Models;
+using SistemaTicoBus.WEB.Services.Api;
 using System.Data;
 
 namespace SistemaTicoBus.WEB.Controllers
@@ -14,18 +14,19 @@ namespace SistemaTicoBus.WEB.Controllers
         private const string RolAdministrador = "Administrador";
         private const string RolChofer = "Chofer";
         private const string RolPasajero = "Pasajero";
-        private const int IntentosMaximos = 2;
-        private const int MinutosBloqueo = 3;
 
         private readonly string _connectionString;
-        private readonly IEmailServicio _emailServicio;
         private readonly AppDbContext _context;
+        private readonly ITicoBusApiClient _apiClient;
 
-        public AccountController(IConfiguration configuration, IEmailServicio emailServicio, AppDbContext context)
+        public AccountController(
+            IConfiguration configuration,
+            AppDbContext context,
+            ITicoBusApiClient apiClient)
         {
             _connectionString = configuration.GetConnectionString("DefaultConnection") ?? string.Empty;
-            _emailServicio = emailServicio;
             _context = context;
+            _apiClient = apiClient;
         }
 
         [HttpGet]
@@ -38,6 +39,7 @@ namespace SistemaTicoBus.WEB.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Login(LoginViewModel model)
         {
+            // La UI ya no consulta SQL: manda usuario y clave a la API con API Key.
             model.Username = model.Username?.Trim() ?? string.Empty;
             model.Password = model.Password?.Trim() ?? string.Empty;
 
@@ -46,113 +48,35 @@ namespace SistemaTicoBus.WEB.Controllers
                 return View(model);
             }
 
-            UsuarioLogin? usuario;
+            ApiResultado<LoginApiDatos> resultado = await _apiClient.LoginAsync(model);
 
-            try
+            if (!resultado.Exito || resultado.Datos == null)
             {
-                usuario = ObtenerUsuarioLogin(model.Username);
-            }
-            catch (SqlException)
-            {
-                ModelState.AddModelError("", "No se pudo conectar con la base de datos. Verifique la conexión y que TicoBusDB exista.");
+                ModelState.AddModelError("", resultado.Mensaje);
                 return View(model);
             }
 
-            if (usuario == null)
+            HttpContext.Session.SetInt32("UsuarioId", resultado.Datos.UsuarioId);
+            HttpContext.Session.SetString("NombreUsuario", resultado.Datos.NombreUsuario);
+            HttpContext.Session.SetString("Rol", resultado.Datos.Rol);
+
+            if (resultado.Datos.Rol == RolAdministrador)
             {
-                ModelState.AddModelError("", "Usuario o contraseña incorrectos.");
-                return View(model);
+                return RedirectToAction(nameof(AdminDashboard));
             }
 
-            if (usuario.Rol == RolAdministrador)
+            if (resultado.Datos.Rol == RolChofer)
             {
-                if (usuario.IntentosFallidos > 0 || usuario.BloqueadoHasta.HasValue)
-                {
-                    ResetearIntentos(usuario.Id);
-                }
-            }
-            else if (usuario.BloqueadoHasta.HasValue)
-            {
-                if (usuario.BloqueadoHasta.Value > DateTime.Now)
-                {
-                    await IntentarEnviarCorreoCuentaBloqueadaAsync(
-                        usuario.Correo,
-                        usuario.NombreUsuario,
-                        usuario.BloqueadoHasta.Value
-                    );
-
-                    TimeSpan tiempoRestante = usuario.BloqueadoHasta.Value - DateTime.Now;
-
-                    ModelState.AddModelError(
-                        "",
-                        $"Cuenta bloqueada. Intente de nuevo en {tiempoRestante.Minutes:00}:{tiempoRestante.Seconds:00}."
-                    );
-
-                    return View(model);
-                }
-
-                ResetearIntentos(usuario.Id);
-                usuario.IntentosFallidos = 0;
-                usuario.BloqueadoHasta = null;
+                return RedirectToAction(nameof(ChoferDashboard));
             }
 
-            if (usuario.Clave == model.Password)
+            if (resultado.Datos.Rol == RolPasajero)
             {
-                ResetearIntentos(usuario.Id);
-
-                HttpContext.Session.SetInt32("UsuarioId", usuario.Id);
-                HttpContext.Session.SetString("NombreUsuario", usuario.NombreUsuario);
-                HttpContext.Session.SetString("Rol", usuario.Rol);
-
-                await IntentarEnviarCorreoInicioSesionAsync(usuario.Correo, usuario.NombreUsuario);
-
-                if (usuario.Rol == RolAdministrador)
-                {
-                    return RedirectToAction(nameof(AdminDashboard));
-                }
-
-                if (usuario.Rol == RolChofer)
-                {
-                    return RedirectToAction(nameof(ChoferDashboard));
-                }
-
-                if (usuario.Rol == RolPasajero)
-                {
-                    return RedirectToAction(nameof(PasajeroDashboard));
-                }
-
-                HttpContext.Session.Clear();
-                ModelState.AddModelError("", "El rol del usuario no es válido.");
-                return View(model);
+                return RedirectToAction(nameof(PasajeroDashboard));
             }
 
-            if (usuario.Rol == RolAdministrador)
-            {
-                ModelState.AddModelError("", "Usuario o contraseña incorrectos.");
-                return View(model);
-            }
-
-            int nuevosIntentos = usuario.IntentosFallidos + 1;
-
-            if (nuevosIntentos >= IntentosMaximos)
-            {
-                DateTime bloqueadoHasta = DateTime.Now.AddMinutes(MinutosBloqueo);
-
-                BloquearUsuario(usuario.Id, bloqueadoHasta);
-
-                await IntentarEnviarCorreoCuentaBloqueadaAsync(
-                    usuario.Correo,
-                    usuario.NombreUsuario,
-                    bloqueadoHasta
-                );
-
-                ModelState.AddModelError("", "Demasiados intentos fallidos. Cuenta bloqueada por 3 minutos.");
-                return View(model);
-            }
-
-            RegistrarIntentoFallido(usuario.Id, nuevosIntentos);
-
-            ModelState.AddModelError("", "Usuario o contraseña incorrectos.");
+            HttpContext.Session.Clear();
+            ModelState.AddModelError("", "El rol del usuario no es válido.");
             return View(model);
         }
 
@@ -171,6 +95,7 @@ namespace SistemaTicoBus.WEB.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ChangePassword(ChangePasswordViewModel model)
         {
+            // La UI manda el cambio de clave a la API. La API valida y actualiza.
             model.Nombre = model.Nombre?.Trim() ?? string.Empty;
             model.ClaveActual = model.ClaveActual?.Trim() ?? string.Empty;
             model.NuevaClave = model.NuevaClave?.Trim() ?? string.Empty;
@@ -180,55 +105,22 @@ namespace SistemaTicoBus.WEB.Controllers
                 return View(model);
             }
 
-            UsuarioLogin? usuario;
+            ApiResultado<CambioClaveApiDatos> resultado = await _apiClient.CambiarClaveAsync(model);
 
-            try
+            if (!resultado.Exito || resultado.Datos == null)
             {
-                usuario = ObtenerUsuarioLogin(model.Nombre);
-            }
-            catch (SqlException)
-            {
-                ModelState.AddModelError("", "No se pudo conectar con la base de datos.");
+                ModelState.AddModelError("", resultado.Mensaje);
                 return View(model);
             }
 
-            if (usuario == null)
-            {
-                ModelState.AddModelError("", "No existe un usuario con ese nombre.");
-                return View(model);
-            }
+            TempData["MensajeExito"] = resultado.Mensaje;
 
-            if (usuario.Rol != RolChofer && usuario.Rol != RolPasajero)
-            {
-                ModelState.AddModelError("", "El cambio de clave solo está habilitado para usuarios Chofer y Pasajero.");
-                return View(model);
-            }
-
-            if (usuario.Clave != model.ClaveActual)
-            {
-                ModelState.AddModelError("", "La clave actual no es correcta.");
-                return View(model);
-            }
-
-            if (usuario.Clave == model.NuevaClave)
-            {
-                ModelState.AddModelError("", "La nueva clave debe ser diferente a la clave actual.");
-                return View(model);
-            }
-
-            ActualizarClave(usuario.Id, model.NuevaClave);
-            ResetearIntentos(usuario.Id);
-
-            await IntentarEnviarCorreoCambioClaveAsync(usuario.Correo, usuario.NombreUsuario);
-
-            TempData["MensajeExito"] = "La clave fue actualizada correctamente.";
-
-            if (usuario.Rol == RolChofer)
+            if (resultado.Datos.Rol == RolChofer)
             {
                 return RedirectToAction(nameof(ChoferDashboard));
             }
 
-            if (usuario.Rol == RolPasajero)
+            if (resultado.Datos.Rol == RolPasajero)
             {
                 return RedirectToAction(nameof(PasajeroDashboard), new { tab = "viajes" });
             }
@@ -282,7 +174,7 @@ namespace SistemaTicoBus.WEB.Controllers
                 UnidadBL unidadBL = new UnidadBL();
                 model.Unidades = unidadBL.Listar();
             }
-            catch (Exception)
+            catch
             {
                 TempData["MensajeError"] = "No se pudieron cargar rutas o unidades. Revise la conexión a la base de datos.";
             }
@@ -389,53 +281,6 @@ namespace SistemaTicoBus.WEB.Controllers
             return rolSesion == rolRequerido;
         }
 
-        private UsuarioLogin? ObtenerUsuarioLogin(string nombreUsuario)
-        {
-            using (SqlConnection connection = new SqlConnection(_connectionString))
-            {
-                connection.Open();
-
-                string query = @"
-                    SELECT 
-                        u.Id,
-                        u.NombreUsuario,
-                        u.Clave,
-                        u.Correo,
-                        r.Nombre AS RolNombre,
-                        u.BloqueadoHasta,
-                        u.IntentosFallidos
-                    FROM Usuarios u
-                    INNER JOIN Roles r ON u.RolId = r.Id
-                    WHERE u.NombreUsuario = @NombreUsuario";
-
-                using (SqlCommand command = new SqlCommand(query, connection))
-                {
-                    command.Parameters.Add("@NombreUsuario", SqlDbType.VarChar, 50).Value = nombreUsuario.Trim();
-
-                    using (SqlDataReader reader = command.ExecuteReader())
-                    {
-                        if (!reader.Read())
-                        {
-                            return null;
-                        }
-
-                        return new UsuarioLogin
-                        {
-                            Id = Convert.ToInt32(reader["Id"]),
-                            NombreUsuario = reader["NombreUsuario"].ToString() ?? string.Empty,
-                            Clave = reader["Clave"].ToString() ?? string.Empty,
-                            Correo = reader["Correo"].ToString() ?? string.Empty,
-                            Rol = reader["RolNombre"].ToString() ?? string.Empty,
-                            BloqueadoHasta = reader["BloqueadoHasta"] == DBNull.Value
-                                ? null
-                                : Convert.ToDateTime(reader["BloqueadoHasta"]),
-                            IntentosFallidos = Convert.ToInt32(reader["IntentosFallidos"])
-                        };
-                    }
-                }
-            }
-        }
-
         private ChoferDashboardViewModel ObtenerDatosDashboardChofer(int usuarioId)
         {
             ChoferDashboardViewModel model = new ChoferDashboardViewModel
@@ -446,213 +291,78 @@ namespace SistemaTicoBus.WEB.Controllers
                 Viajes = new List<ViajeAsignadoDTO>()
             };
 
-            using (SqlConnection connection = new SqlConnection(_connectionString))
+            using SqlConnection connection = new SqlConnection(_connectionString);
+            connection.Open();
+
+            string choferQuery = @"
+                SELECT 
+                    Identificacion,
+                    Nombre,
+                    Apellidos
+                FROM Choferes
+                WHERE UsuarioId = @UsuarioId";
+
+            string identificacionChofer = string.Empty;
+
+            using (SqlCommand command = new SqlCommand(choferQuery, connection))
             {
-                connection.Open();
+                command.Parameters.Add("@UsuarioId", SqlDbType.Int).Value = usuarioId;
 
-                string choferQuery = @"
-                    SELECT 
-                        Identificacion,
-                        Nombre,
-                        Apellidos
-                    FROM Choferes
-                    WHERE UsuarioId = @UsuarioId";
+                using SqlDataReader reader = command.ExecuteReader();
 
-                string identificacionChofer = string.Empty;
-
-                using (SqlCommand command = new SqlCommand(choferQuery, connection))
+                if (reader.Read())
                 {
-                    command.Parameters.Add("@UsuarioId", SqlDbType.Int).Value = usuarioId;
-
-                    using (SqlDataReader reader = command.ExecuteReader())
-                    {
-                        if (reader.Read())
-                        {
-                            identificacionChofer = reader["Identificacion"].ToString() ?? string.Empty;
-                            model.Identificacion = identificacionChofer;
-                            model.NombreCompleto = $"{reader["Nombre"]} {reader["Apellidos"]}";
-                        }
-                    }
+                    identificacionChofer = reader["Identificacion"].ToString() ?? string.Empty;
+                    model.Identificacion = identificacionChofer;
+                    model.NombreCompleto = $"{reader["Nombre"]} {reader["Apellidos"]}";
                 }
+            }
 
-                if (string.IsNullOrWhiteSpace(identificacionChofer))
+            if (string.IsNullOrWhiteSpace(identificacionChofer))
+            {
+                return model;
+            }
+
+            string viajesQuery = @"
+                SELECT 
+                    v.NumeroViaje,
+                    r.Nombre AS Ruta,
+                    v.PlacaUnidad,
+                    v.FechaHoraSalida,
+                    v.Estado,
+                    u.CapacidadPasajeros,
+                    (
+                        SELECT COUNT(*) 
+                        FROM Reservas re 
+                        WHERE re.ViajeId = v.NumeroViaje
+                    ) AS AsientosOcupados
+                FROM Viajes v
+                INNER JOIN Rutas r ON v.RutaId = r.Id
+                INNER JOIN Unidades u ON v.PlacaUnidad = u.Placa
+                WHERE v.ChoferId = @ChoferId
+                ORDER BY v.FechaHoraSalida DESC";
+
+            using (SqlCommand command = new SqlCommand(viajesQuery, connection))
+            {
+                command.Parameters.Add("@ChoferId", SqlDbType.VarChar, 30).Value = identificacionChofer;
+
+                using SqlDataReader reader = command.ExecuteReader();
+
+                while (reader.Read())
                 {
-                    return model;
-                }
-
-                string viajesQuery = @"
-                    SELECT 
-                        v.NumeroViaje,
-                        r.Nombre AS Ruta,
-                        v.PlacaUnidad,
-                        v.FechaHoraSalida,
-                        v.Estado,
-                        u.CapacidadPasajeros,
-                        (
-                            SELECT COUNT(*) 
-                            FROM Reservas re 
-                            WHERE re.ViajeId = v.NumeroViaje
-                        ) AS AsientosOcupados
-                    FROM Viajes v
-                    INNER JOIN Rutas r ON v.RutaId = r.Id
-                    INNER JOIN Unidades u ON v.PlacaUnidad = u.Placa
-                    WHERE v.ChoferId = @ChoferId
-                    ORDER BY v.FechaHoraSalida DESC";
-
-                using (SqlCommand command = new SqlCommand(viajesQuery, connection))
-                {
-                    command.Parameters.Add("@ChoferId", SqlDbType.VarChar, 30).Value = identificacionChofer;
-
-                    using (SqlDataReader reader = command.ExecuteReader())
+                    model.Viajes.Add(new ViajeAsignadoDTO
                     {
-                        while (reader.Read())
-                        {
-                            model.Viajes.Add(new ViajeAsignadoDTO
-                            {
-                                IdViaje = reader["NumeroViaje"].ToString() ?? string.Empty,
-                                Ruta = reader["Ruta"].ToString() ?? string.Empty,
-                                UnidadPlaca = reader["PlacaUnidad"].ToString() ?? string.Empty,
-                                HorarioSalida = Convert.ToDateTime(reader["FechaHoraSalida"]).ToString("dd/MM/yyyy HH:mm"),
-                                Ocupacion = $"{reader["AsientosOcupados"]}/{reader["CapacidadPasajeros"]}",
-                                Estado = reader["Estado"].ToString() ?? string.Empty
-                            });
-                        }
-                    }
+                        IdViaje = reader["NumeroViaje"].ToString() ?? string.Empty,
+                        Ruta = reader["Ruta"].ToString() ?? string.Empty,
+                        UnidadPlaca = reader["PlacaUnidad"].ToString() ?? string.Empty,
+                        HorarioSalida = Convert.ToDateTime(reader["FechaHoraSalida"]).ToString("dd/MM/yyyy HH:mm"),
+                        Ocupacion = $"{reader["AsientosOcupados"]}/{reader["CapacidadPasajeros"]}",
+                        Estado = reader["Estado"].ToString() ?? string.Empty
+                    });
                 }
             }
 
             return model;
-        }
-
-        private async Task IntentarEnviarCorreoInicioSesionAsync(string correo, string nombreUsuario)
-        {
-            string asunto = $"Inicio de sesión — {nombreUsuario}";
-            string cuerpo = $"Usted inició sesión el día {DateTime.Now:dd/MM/yyyy} a las {DateTime.Now:HH:mm}.";
-            await IntentarEnviarCorreoAsync(correo, asunto, cuerpo);
-        }
-
-        private async Task IntentarEnviarCorreoCuentaBloqueadaAsync(string correo, string nombreUsuario, DateTime fechaReintento)
-        {
-            string asunto = "Cuenta bloqueada";
-            string cuerpo =
-                $"La cuenta {nombreUsuario} está bloqueada por 3 minutos. " +
-                $"Puede reintentar el {fechaReintento:dd/MM/yyyy} a las {fechaReintento:HH:mm}.";
-
-            await IntentarEnviarCorreoAsync(correo, asunto, cuerpo);
-        }
-
-        private async Task IntentarEnviarCorreoCambioClaveAsync(string correo, string nombreUsuario)
-        {
-            string asunto = $"Cambio de clave — {nombreUsuario}";
-            string cuerpo = $"La clave de su cuenta fue actualizada el día {DateTime.Now:dd/MM/yyyy} a las {DateTime.Now:HH:mm}.";
-            await IntentarEnviarCorreoAsync(correo, asunto, cuerpo);
-        }
-
-        private async Task IntentarEnviarCorreoAsync(string correo, string asunto, string cuerpo)
-        {
-            try
-            {
-                await _emailServicio.EnviarCorreoAsync(correo, asunto, cuerpo);
-            }
-            catch
-            {
-                TempData["MensajeAdvertencia"] = "La operación se realizó, pero no se pudo enviar el correo. Revise la configuración de Mailtrap.";
-            }
-        }
-
-        private void RegistrarIntentoFallido(int usuarioId, int intentosFallidos)
-        {
-            using (SqlConnection connection = new SqlConnection(_connectionString))
-            {
-                connection.Open();
-
-                string query = @"
-                    UPDATE Usuarios
-                    SET IntentosFallidos = @IntentosFallidos
-                    WHERE Id = @Id";
-
-                using (SqlCommand command = new SqlCommand(query, connection))
-                {
-                    command.Parameters.Add("@IntentosFallidos", SqlDbType.Int).Value = intentosFallidos;
-                    command.Parameters.Add("@Id", SqlDbType.Int).Value = usuarioId;
-                    command.ExecuteNonQuery();
-                }
-            }
-        }
-
-        private void BloquearUsuario(int usuarioId, DateTime bloqueadoHasta)
-        {
-            using (SqlConnection connection = new SqlConnection(_connectionString))
-            {
-                connection.Open();
-
-                string query = @"
-                    UPDATE Usuarios
-                    SET 
-                        IntentosFallidos = @IntentosFallidos,
-                        BloqueadoHasta = @BloqueadoHasta
-                    WHERE Id = @Id";
-
-                using (SqlCommand command = new SqlCommand(query, connection))
-                {
-                    command.Parameters.Add("@IntentosFallidos", SqlDbType.Int).Value = IntentosMaximos;
-                    command.Parameters.Add("@BloqueadoHasta", SqlDbType.DateTime).Value = bloqueadoHasta;
-                    command.Parameters.Add("@Id", SqlDbType.Int).Value = usuarioId;
-                    command.ExecuteNonQuery();
-                }
-            }
-        }
-
-        private void ResetearIntentos(int usuarioId)
-        {
-            using (SqlConnection connection = new SqlConnection(_connectionString))
-            {
-                connection.Open();
-
-                string query = @"
-                    UPDATE Usuarios
-                    SET 
-                        IntentosFallidos = 0,
-                        BloqueadoHasta = NULL
-                    WHERE Id = @Id";
-
-                using (SqlCommand command = new SqlCommand(query, connection))
-                {
-                    command.Parameters.Add("@Id", SqlDbType.Int).Value = usuarioId;
-                    command.ExecuteNonQuery();
-                }
-            }
-        }
-
-        private void ActualizarClave(int usuarioId, string nuevaClave)
-        {
-            using (SqlConnection connection = new SqlConnection(_connectionString))
-            {
-                connection.Open();
-
-                string query = @"
-                    UPDATE Usuarios
-                    SET Clave = @NuevaClave
-                    WHERE Id = @Id";
-
-                using (SqlCommand command = new SqlCommand(query, connection))
-                {
-                    command.Parameters.Add("@NuevaClave", SqlDbType.VarChar, 255).Value = nuevaClave.Trim();
-                    command.Parameters.Add("@Id", SqlDbType.Int).Value = usuarioId;
-                    command.ExecuteNonQuery();
-                }
-            }
-        }
-
-        private class UsuarioLogin
-        {
-            public int Id { get; set; }
-            public string NombreUsuario { get; set; } = string.Empty;
-            public string Clave { get; set; } = string.Empty;
-            public string Correo { get; set; } = string.Empty;
-            public string Rol { get; set; } = string.Empty;
-            public DateTime? BloqueadoHasta { get; set; }
-            public int IntentosFallidos { get; set; }
         }
     }
 }
