@@ -1,412 +1,189 @@
-﻿@model List<SistemaTicoBus.WEB.Models.ChoferViewModel>
-@using Microsoft.AspNetCore.Http
+﻿@model IEnumerable<SistemaTicoBus.WEB.Models.ChoferViewModel>
+
 @{
-    Layout = null;
-    string busquedaActual = ViewBag.Busqueda as string ?? "";
+    Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
+    ViewData["Title"] = "Gestión de Choferes";
+    ViewData["Seccion"] = "Choferes";
 }
 
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Gestión de Choferes - TicoBus</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" />
+<!-- ENCABEZADO -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <small class="text-muted text-uppercase fw-semibold">Administración / Personal</small>
+        <h1 class="fw-bold text-dark mb-0">Gestión de Choferes</h1>
+    </div>
+    <button class="btn btn-primario d-flex align-items-center gap-2"
+            data-bs-toggle="modal" data-bs-target="#modalAgregarChofer">
+        <i class="bi bi-plus-circle"></i> Registrar Chofer
+    </button>
+</div>
 
-    <style>
-            body {
-                background-color: #f4f6f8;
-                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-                font-size: 0.875rem;
-            }
-
-            .sidebar {
-                background-color: #ffffff;
-                min-height: 100vh;
-                border-right: 1px solid #e9ecef;
-            }
-
-                .sidebar .brand-title {
-                    color: #1a2530;
-                    font-size: 1.25rem;
-                    font-weight: 700;
-                }
-
-                .sidebar .section-title {
-                    font-size: 0.7rem;
-                    text-transform: uppercase;
-                    letter-spacing: 0.05em;
-                    color: #9097a3;
-                    font-weight: 700;
-                }
-
-                .sidebar .nav-link {
-                    color: #5a6578;
-                    font-weight: 500;
-                    font-size: 0.82rem;
-                    padding: 0.65rem 1rem;
-                    border-radius: 0.5rem;
-                    margin-bottom: 0.2rem;
-                    display: flex;
-                    align-items: center;
-                    text-decoration: none;
-                }
-
-                    .sidebar .nav-link.active {
-                        background-color: #e8f7f2;
-                        color: #0f7654;
-                        font-weight: 600;
-                    }
-
-                    .sidebar .nav-link:hover:not(.active) {
-                        background-color: #f8f9fa;
-                        color: #1a2530;
-                    }
-
-            .btn-mint-action {
-                background-color: #00664f;
-                color: white;
-                border-radius: 0.5rem;
-                font-weight: 600;
-                font-size: 0.82rem;
-                padding: 0.65rem;
-                border: none;
-            }
-
-            .top-header {
-                background-color: #112233;
-                color: white;
-                padding: 0.65rem 1.5rem;
-            }
-
-            .search-box-container {
-                background-color: #ffffff;
-                border-radius: 0.75rem;
-                border: 1px solid #e9ecef;
-            }
-
-            .custom-dashboard-card {
-                background: #ffffff;
-                border-radius: 1rem;
-                border: 1px solid #e9ecef;
-                padding: 1.25rem;
-            }
-
-            .btn-register {
-                background-color: #0f3460;
-                color: white;
-                font-weight: 600;
-                font-size: 0.82rem;
-                border-radius: 0.5rem;
-                padding: 0.65rem;
-                border: none;
-            }
-
-                .btn-register:hover {
-                    background-color: #0a2342;
-                    color: white;
-                }
-
-            .table-choferes th {
-                background-color: #f8f9fa;
-                color: #5a6578;
-                font-weight: 600;
-                text-transform: uppercase;
-                font-size: 0.72rem;
-            }
-
-            .table-choferes td {
-                font-size: 0.82rem;
-            }
-
-            .form-label {
-                font-size: 0.75rem;
-            }
-
-            .form-control {
-                font-size: 0.82rem;
-            }
-
-            h4.fs-5 {
-                font-size: 0.95rem !important;
-            }
-    </style>
-</head>
-<body>
-
-    <div class="container-fluid p-0">
-        <div class="row g-0 top-header align-items-center shadow-sm">
-            <div class="col-6 d-flex align-items-center">
-                <span class="fw-bold" style="font-size: 1rem;">TicoBus</span>
-                <span class="mx-3 text-secondary">|</span>
-                <span class="text-muted text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.05em;">Consola de Operador</span>
-            </div>
-            <div class="col-6 text-end d-flex align-items-center justify-content-end">
-                <i class="bi bi-bell me-4" style="cursor: pointer; font-size: 1rem;"></i>
-                <div class="dropdown">
-                    <button class="btn btn-link text-white text-decoration-none dropdown-toggle p-0 d-flex align-items-center"
-                            style="font-size: 0.82rem;" type="button" data-bs-toggle="dropdown">
-                        <i class="bi bi-person-circle me-2" style="font-size: 1.1rem;"></i>
-                        @(Context.Session.GetString("NombreUsuario") ?? "Administrador")
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-end">
-                        <li><a class="dropdown-item text-danger" href="/Account/Logout"><i class="bi bi-box-arrow-right me-2"></i>Cerrar Sesión</a></li>
-                    </ul>
+<!-- BUSCADOR -->
+<div class="dashboard-card mb-4">
+    <form asp-controller="Choferes" asp-action="Index" method="get">
+        <div class="row align-items-center g-2">
+            <div class="col-md-10">
+                <div class="input-group">
+                    <span class="input-group-text bg-transparent border-0 text-muted">
+                        <i class="bi bi-search"></i>
+                    </span>
+                    <input type="text"
+                           name="busqueda"
+                           class="form-control border-0 bg-transparent"
+                           placeholder="Buscar chofer por nombre..."
+                           value="@ViewBag.Busqueda" />
                 </div>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-secundario w-100">Buscar</button>
             </div>
         </div>
+    </form>
+</div>
 
-        <div class="row g-0">
-            <div class="col-md-3 col-lg-2 p-3 sidebar d-flex flex-column justify-content-between">
-                <div>
-                    <div class="mb-4 px-2">
-                        <h2 class="brand-title m-0">TicoBus</h2>
-                        <span class="text-muted" style="font-size: 0.75rem;">Consola de Operador</span>
-                    </div>
-                    <div class="mb-3 px-2">
-                        <span class="section-title">Administración</span>
-                    </div>
-                    <ul class="nav flex-column mb-4">
-                        <li class="nav-item">
-                            <a href="/Choferes/Index" class="nav-link active">
-                                <i class="bi bi-person-video2 me-3"></i> Gestión de Choferes
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="/Account/AdminDashboard" class="nav-link">
-                                <i class="bi bi-signpost-split me-3"></i> Catálogo de Rutas
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="/Unidad/Index" class="nav-link">
-                                <i class="bi bi-bus-front me-3"></i> Catálogo de Unidades
-                            </a>
-                        </li>
-                        @* Corrección: antes estos enlaces tenían href="#" y por eso no navegaban desde Gestión de Choferes. *@
-                        <li class="nav-item">
-                            <a href="@Url.Action("Index", "Viajes")" class="nav-link">
-                                <i class="bi bi-calendar3 me-3"></i> Gestión de Viajes
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="@Url.Action("Index", "ViajeCancelado")" class="nav-link">
-                                <i class="bi bi-calendar-x me-3"></i> Viajes Cancelados
-                            </a>
-                        </li>
-                    </ul>
-                    <div class="px-2 mb-4">
-                        <button class="btn btn-mint-action w-100 d-flex align-items-center justify-content-center">
-                            <i class="bi bi-plus-circle me-2"></i> Nuevo Trayecto
-                        </button>
-                    </div>
-                </div>
-                <div>
-                    <hr class="text-muted">
-                    <ul class="nav flex-column">
-                        <li class="nav-item"><a href="#" class="nav-link text-muted"><i class="bi bi-gear me-3"></i> Ajustes</a></li>
-                        <li class="nav-item"><a href="/Account/Logout" class="nav-link text-danger"><i class="bi bi-box-arrow-right me-3"></i> Cerrar Sesión</a></li>
-                    </ul>
-                </div>
+<!-- TABLA DE CHOFERES -->
+<div class="dashboard-card">
+    <h5 class="fw-bold text-dark mb-4">Listado de Choferes</h5>
+    <div class="table-responsive">
+        <table class="table tabla-dashboard align-middle mb-0">
+            <thead>
+                <tr>
+                    <th class="border-0 py-3">Identificación</th>
+                    <th class="border-0 py-3">Nombre Completo</th>
+                    <th class="border-0 py-3">Correo</th>
+                    <th class="border-0 py-3">Usuario</th>
+                    <th class="border-0 py-3 text-end">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model != null && Model.Any())
+                {
+                    foreach (var chofer in Model)
+                    {
+                        <tr>
+                            <td class="fw-bold">@chofer.Identificacion</td>
+                            <td>@chofer.Nombre @chofer.Apellidos</td>
+                            <td>@chofer.Correo</td>
+                            <td><span class="text-muted">@chofer.NombreUsuario</span></td>
+                            <td class="text-end">
+                                <button type="button"
+                                        class="btn btn-sm btn-outline-warning border-0"
+                                        title="Editar"
+                                        onclick="prepararEdicion('@chofer.Identificacion', '@chofer.Nombre', '@chofer.Apellidos', '@chofer.Correo')">
+                                    <i class="bi bi-pencil-square"></i>
+                                </button>
+                                <form asp-controller="Choferes" asp-action="Delete" method="post" class="d-inline">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@chofer.Identificacion" />
+                                    <button type="submit"
+                                            class="btn btn-sm btn-outline-danger border-0"
+                                            title="Eliminar"
+                                            onclick="return confirm('¿Seguro que deseas eliminar al chofer @chofer.Nombre?')">
+                                        <i class="bi bi-trash-fill"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="5" class="text-center py-4 text-muted">
+                            No se encontraron choferes que coincidan con la búsqueda.
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- MODAL AGREGAR CHOFER -->
+<div class="modal fade" id="modalAgregarChofer" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content" style="border-radius: 1rem;">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold">Registrar Nuevo Chofer</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-
-            <div class="col-md-9 col-lg-10 p-4" style="background-color: #f4f6f8;">
-
-                <div class="search-box-container p-3 mb-4 shadow-sm">
-                    <form action="/Choferes/Index" method="get">
-                        <div class="row align-items-center g-2">
-                            <div class="col">
-                                <div class="input-group">
-                                    <span class="input-group-text bg-transparent border-0 text-muted"><i class="bi bi-search"></i></span>
-                                    <input type="text" name="busqueda" class="form-control border-0 bg-transparent"
-                                           placeholder="Buscar chofer por nombre o apellidos..."
-                                           value="@busquedaActual" />
-                                </div>
-                            </div>
-                            <div class="col-auto d-flex gap-2">
-                                <button type="submit" class="btn btn-dark fw-semibold py-2 px-4"
-                                        style="border-radius: 0.5rem; font-size: 0.82rem;">
-                                    Buscar
-                                </button>
-                                @if (!string.IsNullOrEmpty(busquedaActual))
-                                {
-                                    <a href="/Choferes/Index" class="btn btn-outline-secondary fw-semibold py-2 px-3"
-                                           style="border-radius: 0.5rem; font-size: 0.82rem;">
-                                        <i class="bi bi-x-lg me-1"></i>Limpiar
-                                    </a>
-                                }
-                            </div>
-                        </div>
-                    </form>
-                </div>
-
-                @if (TempData["MensajeExito"] != null)
-                {
-                    <div class="alert alert-success alert-dismissible fade show py-2 mb-3" role="alert" style="font-size:0.82rem;">
-                        <i class="bi bi-check-circle me-2"></i>@TempData["MensajeExito"]
-                        <button type="button" class="btn-close btn-sm" data-bs-dismiss="alert"></button>
+            <div class="modal-body">
+                <form asp-controller="Choferes" asp-action="Create" method="post">
+                    @Html.AntiForgeryToken()
+                    <div class="mb-3">
+                        <label class="form-label">Identificación</label>
+                        <input type="text" name="Identificacion" class="form-control" placeholder="1-1111-1111" required />
                     </div>
-                }
-                @if (TempData["MensajeError"] != null)
-                {
-                    <div class="alert alert-danger alert-dismissible fade show py-2 mb-3" role="alert" style="font-size:0.82rem;">
-                        <i class="bi bi-exclamation-circle me-2"></i>@TempData["MensajeError"]
-                        <button type="button" class="btn-close btn-sm" data-bs-dismiss="alert"></button>
+                    <div class="mb-3">
+                        <label class="form-label">Nombre</label>
+                        <input type="text" name="Nombre" class="form-control" placeholder="Nombre del chofer" required />
                     </div>
-                }
-
-                <div class="row g-4">
-                    <div class="col-xl-4 col-lg-5">
-                        <div class="custom-dashboard-card shadow-sm">
-                            <h4 id="formTitle" class="fs-5 fw-bold mb-3 text-dark">Registrar Nuevo Chofer</h4>
-
-                            <form id="formChofer" action="/Choferes/Create" method="post">
-                                @Html.AntiForgeryToken()
-                                <input type="hidden" name="idOriginal" id="inputIdOriginal" />
-
-                                <div class="mb-2">
-                                    <label class="form-label text-secondary fw-semibold">Cédula / Identificación</label>
-                                    <input type="text" name="Identificacion" id="inputIdentificacion"
-                                           class="form-control" placeholder="Ej: 1-1234-5678" required />
-                                </div>
-                                <div class="mb-2">
-                                    <label class="form-label text-secondary fw-semibold">Nombre</label>
-                                    <input type="text" name="Nombre" id="inputNombre"
-                                           class="form-control" placeholder="Nombre del chofer" required />
-                                </div>
-                                <div class="mb-2">
-                                    <label class="form-label text-secondary fw-semibold">Apellidos</label>
-                                    <input type="text" name="Apellidos" id="inputApellidos"
-                                           class="form-control" placeholder="Apellidos del chofer" required />
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label text-secondary fw-semibold">Correo Electrónico</label>
-                                    <input type="email" name="Correo" id="inputCorreo"
-                                           class="form-control" placeholder="correo@ejemplo.com" required />
-                                    <div class="form-text" style="font-size:0.72rem;">
-                                        Se enviará la clave temporal a este correo.
-                                    </div>
-                                </div>
-
-                                <button type="submit" id="btnSubmit" class="btn btn-register w-100 shadow-sm">
-                                    Guardar Chofer
-                                </button>
-                                <button type="button" id="btnCancelar" onclick="cancelarEdicion()"
-                                        class="btn btn-outline-secondary w-100 mt-2"
-                                        style="font-size:0.82rem; display:none;">
-                                    Cancelar edición
-                                </button>
-                            </form>
-                        </div>
+                    <div class="mb-3">
+                        <label class="form-label">Apellidos</label>
+                        <input type="text" name="Apellidos" class="form-control" placeholder="Apellidos del chofer" required />
                     </div>
-
-                    <div class="col-xl-8 col-lg-7">
-                        <div class="custom-dashboard-card shadow-sm">
-                            <h4 class="fs-5 fw-bold mb-3 text-dark">Listado de Choferes</h4>
-                            <div class="table-responsive">
-                                <table class="table table-choferes align-middle mb-0">
-                                    <thead>
-                                        <tr>
-                                            <th class="border-0 py-3">ID</th>
-                                            <th class="border-0 py-3">Nombre</th>
-                                            <th class="border-0 py-3">Correo</th>
-                                            <th class="border-0 py-3 text-end">Acciones</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @if (Model != null && Model.Any())
-                                        {
-                                            foreach (var chofer in Model)
-                                            {
-                                                <tr>
-                                                    <td class="py-3 fw-bold text-dark" style="white-space:nowrap;">
-                                                        @chofer.Identificacion
-                                                    </td>
-                                                    <td class="py-3" style="white-space:nowrap;">
-                                                        @chofer.Nombre @chofer.Apellidos
-                                                    </td>
-                                                    <td class="py-3 text-secondary" style="white-space:nowrap;">
-                                                        @chofer.Correo
-                                                    </td>
-                                                    <td class="py-3 text-end" style="white-space:nowrap;">
-                                                        <button type="button"
-                                                                class="btn btn-sm btn-outline-warning border-0"
-                                                                title="Editar"
-                                                                onclick="editarChofer(
-                                                            '@Html.Raw(chofer.Identificacion.Replace("'", "\'"))',
-                                                            '@Html.Raw(chofer.Nombre.Replace("'", "\'"))',
-                                                            '@Html.Raw(chofer.Apellidos.Replace("'", "\'"))',
-                                                            '@Html.Raw(chofer.Correo.Replace("'", "\'"))')">
-                                                            <i class="bi bi-pencil-square"></i>
-                                                        </button>
-
-                                                        <form action="/Choferes/Delete" method="post" style="display:inline;">
-                                                            @Html.AntiForgeryToken()
-                                                            <input type="hidden" name="id" value="@chofer.Identificacion" />
-                                                            <button type="submit"
-                                                                    class="btn btn-sm btn-outline-danger border-0"
-                                                                    title="Eliminar"
-                                                                    onclick="return confirm('¿Seguro que deseas eliminar a @Html.Raw(chofer.Nombre.Replace("'", "\'")) @Html.Raw(chofer.Apellidos.Replace("'", "\'"))?')">
-                                                                <i class="bi bi-trash-fill"></i>
-                                                            </button>
-                                                        </form>
-                                                    </td>
-                                                </tr>
-                                            }
-                                        }
-                                        else
-                                        {
-                                            <tr>
-                                                <td colspan="4" class="text-center py-4 text-muted">
-                                                    No se encontraron choferes que coincidan con la búsqueda.
-                                                </td>
-                                            </tr>
-                                        }
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
+                    <div class="mb-3">
+                        <label class="form-label">Correo electrónico</label>
+                        <input type="email" name="Correo" class="form-control" placeholder="correo@ejemplo.com" required />
                     </div>
-                </div>
+                    <div class="d-flex justify-content-end gap-2 mt-4">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primario">Guardar Chofer</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
+</div>
 
+<!-- MODAL EDITAR CHOFER -->
+<div class="modal fade" id="modalEditarChofer" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content" style="border-radius: 1rem;">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold">Editar Chofer</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formEditar" asp-controller="Choferes" asp-action="Edit" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" id="editIdOriginal" name="id" />
+                    <div class="mb-3">
+                        <label class="form-label">Identificación</label>
+                        <input type="text" id="editIdentificacion" name="Identificacion" class="form-control" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Nombre</label>
+                        <input type="text" id="editNombre" name="Nombre" class="form-control" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Apellidos</label>
+                        <input type="text" id="editApellidos" name="Apellidos" class="form-control" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Correo electrónico</label>
+                        <input type="email" id="editCorreo" class="form-control" disabled />
+                        <small class="text-muted">El correo no se puede modificar.</small>
+                    </div>
+                    <div class="d-flex justify-content-end gap-2 mt-4">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primario">Guardar Cambios</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
     <script>
-            function editarChofer(identificacion, nombre, apellidos, correo) {
-                document.getElementById('formTitle').innerText = "Editar Chofer";
-                document.getElementById('formChofer').action = "/Choferes/Edit/" + identificacion;
-                document.getElementById('inputIdOriginal').value = identificacion;
-                document.getElementById('inputIdentificacion').value = identificacion;
-                document.getElementById('inputNombre').value = nombre;
-                document.getElementById('inputApellidos').value = apellidos;
-
-                // El correo no se edita
-                const correoInput = document.getElementById('inputCorreo');
-                correoInput.value = correo;
-                correoInput.readOnly = true;
-                correoInput.classList.add('bg-light', 'text-secondary');
-
-                document.getElementById('btnSubmit').innerText = "Guardar Cambios";
-                document.getElementById('btnCancelar').style.display = 'block';
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-            }
-
-            function cancelarEdicion() {
-                document.getElementById('formTitle').innerText = "Registrar Nuevo Chofer";
-                document.getElementById('formChofer').action = "/Choferes/Create";
-                document.getElementById('formChofer').reset();
-                document.getElementById('inputIdOriginal').value = '';
-
-                const correoInput = document.getElementById('inputCorreo');
-                correoInput.readOnly = false;
-                correoInput.classList.remove('bg-light', 'text-secondary');
-
-                document.getElementById('btnSubmit').innerText = "Guardar Chofer";
-                document.getElementById('btnCancelar').style.display = 'none';
-            }
+        function prepararEdicion(id, nombre, apellidos, correo) {
+            document.getElementById('editIdOriginal').value = id;
+            document.getElementById('editIdentificacion').value = id;
+            document.getElementById('editNombre').value = nombre;
+            document.getElementById('editApellidos').value = apellidos;
+            document.getElementById('editCorreo').value = correo;
+            new bootstrap.Modal(document.getElementById('modalEditarChofer')).show();
+        }
     </script>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+}
