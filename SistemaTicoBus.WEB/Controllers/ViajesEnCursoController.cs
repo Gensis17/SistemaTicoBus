@@ -11,12 +11,10 @@ namespace SistemaTicoBus.WEB.Controllers
     public class ViajesEnCursoController : Controller
     {
         private readonly ViajesEnCursoBL _viajesBL;
-        private readonly System.IServiceProvider _serviceProvider;
 
-        public ViajesEnCursoController(ViajesEnCursoBL viajesBL, System.IServiceProvider serviceProvider)
+        public ViajesEnCursoController(ViajesEnCursoBL viajesBL)
         {
             _viajesBL = viajesBL;
-            _serviceProvider = serviceProvider;
         }
 
         // GET: ViajesEnCurso
@@ -26,7 +24,7 @@ namespace SistemaTicoBus.WEB.Controllers
             return View(viajesActivos);
         }
 
-        // GET: ViajesEnCurso/Detalles/
+        // GET: ViajesEnCurso/Detalles/5
         public async Task<IActionResult> Detalles(int id)
         {
             var viaje = await _viajesBL.ObtenerDetalleViajeAsync(id);
@@ -51,21 +49,14 @@ namespace SistemaTicoBus.WEB.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            var context = (SistemaTicoBus.DA.Data.AppDbContext)_serviceProvider.GetService(typeof(SistemaTicoBus.DA.Data.AppDbContext))!;
-
-            // Mapeo y ordenación usando Nombre y Apellidos de forma combinada
-            var listaPasajerosEstructurada = context.Pasajeros.Select(p => new {
-                Identificacion = p.Identificacion,
-                NombreCompleto = p.Nombre + " " + p.Apellidos
-            }).OrderBy(p => p.NombreCompleto).ToList();
-
+            var listaPasajerosEstructurada = await _viajesBL.ObtenerCatalogoPasajerosAsync();
             ViewBag.Pasajeros = new SelectList(listaPasajerosEstructurada, "Identificacion", "NombreCompleto");
             ViewBag.Viaje = viaje;
 
             return View();
         }
 
-        // ViajesEnCurso/Reservar
+        // POST: ViajesEnCurso/Reservar
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Reservar(int idViaje, string idPasajero, int numeroAsiento)
@@ -81,12 +72,7 @@ namespace SistemaTicoBus.WEB.Controllers
             ModelState.AddModelError("", resultado.Mensaje);
 
             var viaje = await _viajesBL.ObtenerDetalleViajeAsync(idViaje);
-            var context = (SistemaTicoBus.DA.Data.AppDbContext)_serviceProvider.GetService(typeof(SistemaTicoBus.DA.Data.AppDbContext))!;
-
-            var listaPasajerosEstructurada = context.Pasajeros.Select(p => new {
-                Identificacion = p.Identificacion,
-                NombreCompleto = p.Nombre + " " + p.Apellidos
-            }).OrderBy(p => p.NombreCompleto).ToList();
+            var listaPasajerosEstructurada = await _viajesBL.ObtenerCatalogoPasajerosAsync();
 
             ViewBag.Pasajeros = new SelectList(listaPasajerosEstructurada, "Identificacion", "NombreCompleto", idPasajero);
             ViewBag.Viaje = viaje;
@@ -94,7 +80,7 @@ namespace SistemaTicoBus.WEB.Controllers
             return View();
         }
 
-        // ViajesEnCurso/CancelarReserva
+        // POST: ViajesEnCurso/CancelarReserva
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> CancelarReserva(int idReserva, int idViaje)
@@ -111,7 +97,20 @@ namespace SistemaTicoBus.WEB.Controllers
             return RedirectToAction(nameof(Detalles), new { id = idViaje });
         }
 
-        // ViajesEnCurso/FinalizarViaje
+        public async Task<IActionResult> Finalizar(int id)
+        {
+            var viaje = await _viajesBL.ObtenerDetalleViajeAsync(id);
+            if (viaje == null || viaje.Estado != "En Curso") return NotFound();
+
+            // Cálculos para la vista de resumen de recaudación y totales
+            ViewBag.PasajerosEmbarcados = viaje.Reservas?.Count ?? 0;
+            ViewBag.AsientosDisponibles = (viaje.Unidad?.CapacidadPasajeros ?? 0) - (viaje.Reservas?.Count ?? 0);
+            ViewBag.TotalRecaudado = viaje.Reservas?.Sum(r => r.MontoPagado) ?? 0;
+
+            return View(viaje);
+        }
+
+        // POST: ViajesEnCurso/FinalizarViaje
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> FinalizarViaje(int idViaje)

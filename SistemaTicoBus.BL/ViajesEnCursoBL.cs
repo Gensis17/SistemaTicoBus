@@ -101,5 +101,24 @@ namespace SistemaTicoBus.BL
             _context.Viajes.Update(viaje);
             return await _context.SaveChangesAsync() > 0;
         }
+
+
+        public async Task<List<PasajeroCatalogoDTO>> ObtenerCatalogoPasajerosAsync()
+        {
+            return await _context.Pasajeros
+                .Select(p => new PasajeroCatalogoDTO
+                {
+                    Identificacion = p.Identificacion,
+                    NombreCompleto = p.Nombre + " " + p.Apellidos
+                })
+                .OrderBy(p => p.NombreCompleto)
+                .ToListAsync();
+        }
+    }
+
+    public class PasajeroCatalogoDTO
+    {
+        public string Identificacion { get; set; } = string.Empty;
+        public string NombreCompleto { get; set; } = string.Empty;
     }
 }
