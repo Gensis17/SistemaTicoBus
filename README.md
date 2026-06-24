@@ -91,13 +91,21 @@ dotnet run --project SistemaTicoBus.WEB
 
 <div align="center">
 
-| Nombre | Carné | Módulos |
+| Nombre | Carné | Módulos | Primera Entrega |
 |--------|-------|---------|
 | David Daniel Sotela Sánchez | C17735 | Módulo 6 — Gestión de Viajes |
-| Keity López Reyes | C34387 | Módulo 8 — Viajes Cancelados |
-| Génesis Gutiérrez Espinoza | C4F794 | Módulo 7 — Viajes en Curso |
-| Royland Ruiz Arias | C06978 | Módulos 4 y 5 — Rutas y Unidades |
-| Diego Alejandro Quirós Clímaco | C06225 | Módulos 1, 2 y 3 — Login, Choferes y Pasajeros |
+| Keity López Reyes | C34387 | Módulos 3, 4 y 9 — Pasajeros, Rutas y Mis Viajes |
+| Génesis Gutiérrez Espinoza | C4F794 | Módulos 5 y 8 — Unidades y Viajes Cancelados |
+| Royland Ruiz Arias | C06978 | Módulo 7 — Viajes en Curso |
+| Diego Alejandro Quirós Clímaco | C06225 | Módulos 1 y 2 — Login, Choferes |
+
+| Nombre | Carné | Módulos | Segunda Entrega |
+|--------|-------|---------|
+| David Daniel Sotela Sánchez | C17735 | Módulos 4 — Aplicacion Móvil MAUI |
+| Keity López Reyes | C34387 | Módulo 3 — Publicacion en Azure |
+| Génesis Gutiérrez Espinoza | C4F794 | Módulo 2 — API REST Segura con API Key |
+| Royland Ruiz Arias | C06978 | Módulo 2 — API REST Segura con API Key |
+| Diego Alejandro Quirós Clímaco | C06225 | Módulo 2 — API REST Segura con API Key |
 
 </div>
 
