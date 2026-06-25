@@ -1,8 +1,18 @@
+using Microsoft.EntityFrameworkCore;
+using SistemaTicoBus.BL;
 using SistemaTicoBus.BL.Servicios;
+using SistemaTicoBus.DA.Data;
+using SistemaTicoBus.DA.Repositorios;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+        options.JsonSerializerOptions.WriteIndented = true;
+    });
 
 // Configuración del correo. La API es la encargada de enviar correos por Mailtrap.
 builder.Services.Configure<EmailSettings>(
@@ -10,6 +20,21 @@ builder.Services.Configure<EmailSettings>(
 );
 
 builder.Services.AddScoped<IEmailServicio, EmailServicio>();
+
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseSqlServer(
+        builder.Configuration.GetConnectionString("DefaultConnection")
+    )
+);
+
+builder.Services.AddScoped<ViajeRepositorio>(provider =>
+    new ViajeRepositorio(
+        builder.Configuration.GetConnectionString("DefaultConnection")!
+    )
+);
+
+builder.Services.AddScoped<ViajeBL>();
+builder.Services.AddScoped<ViajesEnCursoBL>();
 
 var app = builder.Build();
 

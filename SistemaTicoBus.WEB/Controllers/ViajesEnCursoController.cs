@@ -1,34 +1,46 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using SistemaTicoBus.BL;
+using SistemaTicoBus.MODEL.Entidades;
+using SistemaTicoBus.WEB.Services.Api;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
-using SistemaTicoBus.BL;
-using SistemaTicoBus.MODEL.Entidades;
 
 namespace SistemaTicoBus.WEB.Controllers
 {
     public class ViajesEnCursoController : Controller
     {
-        private readonly ViajesEnCursoBL _viajesBL;
+        private readonly ITicoBusApiClient _apiClient;
 
-        public ViajesEnCursoController(ViajesEnCursoBL viajesBL)
+        public ViajesEnCursoController(ITicoBusApiClient apiClient)
         {
-            _viajesBL = viajesBL;
+            _apiClient = apiClient;
         }
 
-        // GET: ViajesEnCurso
         public async Task<IActionResult> Index()
         {
-            var viajesActivos = await _viajesBL.ObtenerViajesActivosAsync();
-            return View(viajesActivos);
+            ApiResultado<List<Viaje>> resultado = await _apiClient.ObtenerViajesEnCursoAsync();
+
+            if (!resultado.Exito || resultado.Datos == null)
+            {
+                TempData["Error"] = resultado.Mensaje;
+                return View(new List<Viaje>());
+            }
+
+            return View(resultado.Datos);
         }
 
-        // GET: ViajesEnCurso/Detalles/5
         public async Task<IActionResult> Detalles(int id)
         {
-            var viaje = await _viajesBL.ObtenerDetalleViajeAsync(id);
-            if (viaje == null) return NotFound();
+            ApiResultado<Viaje> resultado = await _apiClient.ObtenerDetalleViajeEnCursoAsync(id);
+
+            if (!resultado.Exito || resultado.Datos == null)
+            {
+                return NotFound();
+            }
+
+            var viaje = resultado.Datos;
 
             ViewBag.PasajerosEmbarcados = viaje.Reservas?.Count ?? 0;
             ViewBag.AsientosDisponibles = (viaje.Unidad?.CapacidadPasajeros ?? 0) - (viaje.Reservas?.Count ?? 0);
@@ -37,11 +49,16 @@ namespace SistemaTicoBus.WEB.Controllers
             return View(viaje);
         }
 
-        // GET: ViajesEnCurso/Reservar
         public async Task<IActionResult> Reservar(int id)
         {
-            var viaje = await _viajesBL.ObtenerDetalleViajeAsync(id);
-            if (viaje == null || viaje.Estado != "En Curso") return NotFound();
+            ApiResultado<Viaje> resultadoViaje = await _apiClient.ObtenerDetalleViajeEnCursoAsync(id);
+
+            if (!resultadoViaje.Exito || resultadoViaje.Datos == null || resultadoViaje.Datos.Estado != "En Curso")
+            {
+                return NotFound();
+            }
+
+            var viaje = resultadoViaje.Datos;
 
             if ((viaje.Reservas?.Count ?? 0) >= (viaje.Unidad?.CapacidadPasajeros ?? 0))
             {
@@ -49,21 +66,28 @@ namespace SistemaTicoBus.WEB.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            var listaPasajerosEstructurada = await _viajesBL.ObtenerCatalogoPasajerosAsync();
-            ViewBag.Pasajeros = new SelectList(listaPasajerosEstructurada, "Identificacion", "NombreCompleto");
+            ApiResultado<List<PasajeroCatalogoDTO>> resultadoPasajeros =
+                await _apiClient.ObtenerCatalogoPasajerosAsync();
+
+            ViewBag.Pasajeros = new SelectList(
+                resultadoPasajeros.Datos ?? new List<PasajeroCatalogoDTO>(),
+                "Identificacion",
+                "NombreCompleto"
+            );
+
             ViewBag.Viaje = viaje;
 
             return View();
         }
 
-        // POST: ViajesEnCurso/Reservar
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Reservar(int idViaje, string idPasajero, int numeroAsiento)
         {
-            var resultado = await _viajesBL.RegistrarReservaAsync(idViaje, idPasajero, numeroAsiento);
+            ApiResultado<object> resultado =
+                await _apiClient.ReservarViajeEnCursoAsync(idViaje, idPasajero, numeroAsiento);
 
-            if (resultado.ComponenteExitoso)
+            if (resultado.Exito)
             {
                 TempData["Exito"] = resultado.Mensaje;
                 return RedirectToAction(nameof(Detalles), new { id = idViaje });
@@ -71,38 +95,54 @@ namespace SistemaTicoBus.WEB.Controllers
 
             ModelState.AddModelError("", resultado.Mensaje);
 
-            var viaje = await _viajesBL.ObtenerDetalleViajeAsync(idViaje);
-            var listaPasajerosEstructurada = await _viajesBL.ObtenerCatalogoPasajerosAsync();
+            ApiResultado<Viaje> resultadoViaje =
+                await _apiClient.ObtenerDetalleViajeEnCursoAsync(idViaje);
 
-            ViewBag.Pasajeros = new SelectList(listaPasajerosEstructurada, "Identificacion", "NombreCompleto", idPasajero);
-            ViewBag.Viaje = viaje;
+            ApiResultado<List<PasajeroCatalogoDTO>> resultadoPasajeros =
+                await _apiClient.ObtenerCatalogoPasajerosAsync();
+
+            ViewBag.Pasajeros = new SelectList(
+                resultadoPasajeros.Datos ?? new List<PasajeroCatalogoDTO>(),
+                "Identificacion",
+                "NombreCompleto",
+                idPasajero
+            );
+
+            ViewBag.Viaje = resultadoViaje.Datos;
 
             return View();
         }
 
-        // POST: ViajesEnCurso/CancelarReserva
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> CancelarReserva(int idReserva, int idViaje)
         {
-            bool cancelado = await _viajesBL.CancelarReservaAsync(idReserva);
-            if (cancelado)
+            ApiResultado<object> resultado =
+                await _apiClient.CancelarReservaViajeEnCursoAsync(idReserva);
+
+            if (resultado.Exito)
             {
                 TempData["Exito"] = "La reserva fue cancelada con éxito y el número de asiento quedó liberado.";
             }
             else
             {
-                TempData["Error"] = "Ocurrió un inconveniente al intentar cancelar la reserva especificada.";
+                TempData["Error"] = resultado.Mensaje;
             }
+
             return RedirectToAction(nameof(Detalles), new { id = idViaje });
         }
 
         public async Task<IActionResult> Finalizar(int id)
         {
-            var viaje = await _viajesBL.ObtenerDetalleViajeAsync(id);
-            if (viaje == null || viaje.Estado != "En Curso") return NotFound();
+            ApiResultado<Viaje> resultado = await _apiClient.ObtenerDetalleViajeEnCursoAsync(id);
 
-            // Cálculos para la vista de resumen de recaudación y totales
+            if (!resultado.Exito || resultado.Datos == null || resultado.Datos.Estado != "En Curso")
+            {
+                return NotFound();
+            }
+
+            var viaje = resultado.Datos;
+
             ViewBag.PasajerosEmbarcados = viaje.Reservas?.Count ?? 0;
             ViewBag.AsientosDisponibles = (viaje.Unidad?.CapacidadPasajeros ?? 0) - (viaje.Reservas?.Count ?? 0);
             ViewBag.TotalRecaudado = viaje.Reservas?.Sum(r => r.MontoPagado) ?? 0;
@@ -110,20 +150,22 @@ namespace SistemaTicoBus.WEB.Controllers
             return View(viaje);
         }
 
-        // POST: ViajesEnCurso/FinalizarViaje
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> FinalizarViaje(int idViaje)
         {
-            bool finalizado = await _viajesBL.FinalizarViajeAsync(idViaje);
-            if (finalizado)
+            ApiResultado<object> resultado =
+                await _apiClient.FinalizarViajeEnCursoAsync(idViaje);
+
+            if (resultado.Exito)
             {
-                TempData["Exito"] = $"El viaje #{idViaje} ha cambiado a estado Completado. El arqueo de caja fue archivado.";
+                TempData["Exito"] = resultado.Mensaje;
             }
             else
             {
-                TempData["Error"] = "No se logró finalizar el viaje debido a inconsistencias en el estado actual.";
+                TempData["Error"] = resultado.Mensaje;
             }
+
             return RedirectToAction(nameof(Index));
         }
     }

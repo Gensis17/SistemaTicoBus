@@ -1,54 +1,56 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using SistemaTicoBus.BL;
 using SistemaTicoBus.DA.Data;
 using SistemaTicoBus.MODEL.Entidades;
+using SistemaTicoBus.WEB.Services.Api;
 
 namespace SistemaTicoBus.WEB.Controllers
 {
     public class ViajesController : Controller
     {
-
-        private readonly ViajeBL _viajeBL;
+        private readonly ITicoBusApiClient _apiClient;
         private readonly AppDbContext _context;
 
-        public ViajesController(ViajeBL viajeBL, AppDbContext context)
+        public ViajesController(ITicoBusApiClient apiClient, AppDbContext context)
         {
-            _viajeBL = viajeBL;
+            _apiClient = apiClient;
             _context = context;
         }
-        public IActionResult Index(string? filtro)
+
+        public async Task<IActionResult> Index(string? filtro)
         {
             var rol = HttpContext.Session.GetString("Rol");
             if (rol != "Administrador" && rol != "Chofer")
                 return RedirectToAction("Login", "Account");
 
-            var viajes = _viajeBL.ObtenerViajes();
+            ApiResultado<List<Viaje>> resultado = await _apiClient.ObtenerViajesAsync(filtro);
 
-            if (!string.IsNullOrWhiteSpace(filtro))
+            var viajes = resultado.Exito && resultado.Datos != null
+                ? resultado.Datos
+                : new List<Viaje>();
+
+            if (!resultado.Exito)
             {
-                viajes = viajes.Where(v =>
-                    v.Ruta!.Nombre.Contains(filtro, StringComparison.OrdinalIgnoreCase) ||
-                    v.FechaHoraSalida.ToString("dd/MM/yyyy").Contains(filtro)
-                ).ToList();
+                TempData["Error"] = resultado.Mensaje;
             }
 
             ViewBag.Filtro = filtro;
             CargarListasParaVista();
+
             return View(viajes);
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Agregar(Viaje viaje)
+        public async Task<IActionResult> Agregar(Viaje viaje)
         {
             var rol = HttpContext.Session.GetString("Rol");
             if (rol != "Administrador" && rol != "Chofer")
                 return RedirectToAction("Login", "Account");
 
-            var resultado = _viajeBL.AgregarViaje(viaje);
+            ApiResultado<Viaje> resultado = await _apiClient.CrearViajeAsync(viaje);
 
-            if (resultado.Exitoso)
+            if (resultado.Exito)
                 TempData["Exito"] = resultado.Mensaje;
             else
                 TempData["Error"] = resultado.Mensaje;
@@ -57,18 +59,21 @@ namespace SistemaTicoBus.WEB.Controllers
         }
 
         [HttpGet]
-        public IActionResult ObtenerViaje(int id)
+        public async Task<IActionResult> ObtenerViaje(int id)
         {
             var rol = HttpContext.Session.GetString("Rol");
             if (rol != "Administrador" && rol != "Chofer")
                 return RedirectToAction("Login", "Account");
 
-            var viaje = _viajeBL.ObtenerViajePorId(id);
-            if (viaje == null || viaje.Estado != "Programado")
+            ApiResultado<Viaje> resultado = await _apiClient.ObtenerViajeAsync(id);
+
+            if (!resultado.Exito || resultado.Datos == null || resultado.Datos.Estado != "Programado")
             {
                 TempData["Error"] = "Solo se pueden editar viajes en estado Programado.";
                 return RedirectToAction(nameof(Index));
             }
+
+            var viaje = resultado.Datos;
 
             TempData["ViajeEditarId"] = viaje.IdViaje.ToString();
             TempData["ViajeEditarRutaId"] = viaje.IdRuta.ToString();
@@ -82,15 +87,15 @@ namespace SistemaTicoBus.WEB.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Editar(Viaje viaje)
+        public async Task<IActionResult> Editar(Viaje viaje)
         {
             var rol = HttpContext.Session.GetString("Rol");
             if (rol != "Administrador" && rol != "Chofer")
                 return RedirectToAction("Login", "Account");
 
-            var resultado = _viajeBL.EditarViaje(viaje);
+            ApiResultado<Viaje> resultado = await _apiClient.EditarViajeAsync(viaje.IdViaje, viaje);
 
-            if (resultado.Exitoso)
+            if (resultado.Exito)
                 TempData["Exito"] = resultado.Mensaje;
             else
                 TempData["Error"] = resultado.Mensaje;
@@ -100,15 +105,15 @@ namespace SistemaTicoBus.WEB.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Cancelar(int idViaje, string motivo)
+        public async Task<IActionResult> Cancelar(int idViaje, string motivo)
         {
             var rol = HttpContext.Session.GetString("Rol");
             if (rol != "Administrador" && rol != "Chofer")
                 return RedirectToAction("Login", "Account");
 
-            var resultado = _viajeBL.CancelarViaje(idViaje, motivo);
+            ApiResultado<object> resultado = await _apiClient.CancelarViajeAsync(idViaje, motivo);
 
-            if (resultado.Exitoso)
+            if (resultado.Exito)
                 TempData["Exito"] = resultado.Mensaje;
             else
                 TempData["Error"] = resultado.Mensaje;
@@ -118,15 +123,15 @@ namespace SistemaTicoBus.WEB.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Iniciar(int idViaje)
+        public async Task<IActionResult> Iniciar(int idViaje)
         {
             var rol = HttpContext.Session.GetString("Rol");
             if (rol != "Administrador" && rol != "Chofer")
                 return RedirectToAction("Login", "Account");
 
-            var resultado = _viajeBL.IniciarViaje(idViaje);
+            ApiResultado<object> resultado = await _apiClient.IniciarViajeAsync(idViaje);
 
-            if (resultado.Exitoso)
+            if (resultado.Exito)
                 TempData["Exito"] = resultado.Mensaje;
             else
                 TempData["Error"] = resultado.Mensaje;
@@ -134,7 +139,6 @@ namespace SistemaTicoBus.WEB.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        //Metodo para cargar las listas de rutas, unidades y choferes en la vista
         private void CargarListasParaVista()
         {
             ViewBag.Rutas = new SelectList(_context.Rutas.ToList(), "Id", "Nombre");
