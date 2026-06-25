@@ -1,48 +1,99 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using SistemaTicoBus.BL;
 using SistemaTicoBus.MODEL.Entidades;
+using SistemaTicoBus.WEB.Services.Api;
 
 namespace SistemaTicoBus.WEB.Controllers
 {
     public class UnidadController : Controller
     {
-        private readonly UnidadBL _unidadBL;
+        private const string RolAdministrador = "Administrador";
 
-        public UnidadController()
+        private readonly ITicoBusApiClient _apiClient;
+
+        public UnidadController(ITicoBusApiClient apiClient)
         {
-            _unidadBL = new UnidadBL();
+            _apiClient = apiClient;
         }
 
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
-            var unidades = _unidadBL.Listar();
-            return View(unidades);
+            if (!UsuarioEsAdministrador())
+            {
+                return RedirectToAction("Login", "Account");
+            }
+
+            ApiResultado<List<Unidad>> resultado = await _apiClient.ObtenerUnidadesAsync();
+
+            if (!resultado.Exito || resultado.Datos == null)
+            {
+                TempData["MensajeError"] = resultado.Mensaje;
+                return View(new List<Unidad>());
+            }
+
+            return View(resultado.Datos);
         }
 
         [HttpPost]
-        public IActionResult Crear(Unidad model)
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Crear(Unidad model)
         {
-            string resultado = _unidadBL.Agregar(model);
+            if (!UsuarioEsAdministrador())
+            {
+                return RedirectToAction("Login", "Account");
+            }
 
-            if (!string.IsNullOrEmpty(resultado))
-                TempData["MensajeError"] = resultado;
+            NormalizarUnidad(model);
+
+            ApiResultado<Unidad> resultado = await _apiClient.CrearUnidadAsync(model);
+
+            if (!resultado.Exito)
+            {
+                TempData["MensajeError"] = resultado.Mensaje;
+            }
             else
-                TempData["MensajeExito"] = "Unidad registrada correctamente.";
+            {
+                TempData["MensajeExito"] = resultado.Mensaje;
+            }
 
-            return RedirectToAction("Index");
+            return RedirectToAction(nameof(Index));
         }
 
         [HttpPost]
-        public IActionResult Editar(Unidad model, string placaOriginal)
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Editar(Unidad model, string placaOriginal)
         {
-            string resultado = _unidadBL.Editar(model, placaOriginal);
+            if (!UsuarioEsAdministrador())
+            {
+                return RedirectToAction("Login", "Account");
+            }
 
-            if (!string.IsNullOrEmpty(resultado))
-                TempData["MensajeError"] = resultado;
+            NormalizarUnidad(model);
+
+            ApiResultado<Unidad> resultado = await _apiClient.EditarUnidadAsync(placaOriginal, model);
+
+            if (!resultado.Exito)
+            {
+                TempData["MensajeError"] = resultado.Mensaje;
+            }
             else
-                TempData["MensajeExito"] = "Unidad actualizada correctamente.";
+            {
+                TempData["MensajeExito"] = resultado.Mensaje;
+            }
 
-            return RedirectToAction("Index");
+            return RedirectToAction(nameof(Index));
+        }
+
+        private bool UsuarioEsAdministrador()
+        {
+            string? rol = HttpContext.Session.GetString("Rol");
+            return rol == RolAdministrador;
+        }
+
+        private void NormalizarUnidad(Unidad model)
+        {
+            model.Placa = model.Placa?.Trim() ?? string.Empty;
+            model.Modelo = model.Modelo?.Trim() ?? string.Empty;
         }
     }
 }

@@ -1,42 +1,60 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using SistemaTicoBus.BL;
+using SistemaTicoBus.MODEL.Entidades;
+using SistemaTicoBus.WEB.Services.Api;
 
 namespace SistemaTicoBus.WEB.Controllers
 {
     public class ViajeCanceladoController : Controller
     {
-        private readonly IConfiguration configuration;
+        private const string RolAdministrador = "Administrador";
 
-        public ViajeCanceladoController(IConfiguration configuration)
+        private readonly ITicoBusApiClient _apiClient;
+
+        public ViajeCanceladoController(ITicoBusApiClient apiClient)
         {
-            this.configuration = configuration;
+            _apiClient = apiClient;
         }
 
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
-            string connectionString = configuration.GetConnectionString("DefaultConnection") ?? string.Empty;
+            if (!UsuarioEsAdministrador())
+            {
+                return RedirectToAction("Login", "Account");
+            }
 
-            ViajeCanceladoBL bl = new ViajeCanceladoBL(connectionString);
+            ApiResultado<List<ViajeCancelado>> resultado = await _apiClient.ObtenerViajesCanceladosAsync();
 
-            var lista = bl.ListarViajesCancelados();
+            if (!resultado.Exito || resultado.Datos == null)
+            {
+                TempData["MensajeError"] = resultado.Mensaje;
+                return View(new List<ViajeCancelado>());
+            }
 
-            return View(lista);
+            return View(resultado.Datos);
         }
 
-        public IActionResult Detalle(int id)
+        public async Task<IActionResult> Detalle(int id)
         {
-            string connectionString = configuration.GetConnectionString("DefaultConnection") ?? string.Empty;
+            if (!UsuarioEsAdministrador())
+            {
+                return RedirectToAction("Login", "Account");
+            }
 
-            ViajeCanceladoBL bl = new ViajeCanceladoBL(connectionString);
+            ApiResultado<ViajeCancelado> resultado = await _apiClient.ObtenerDetalleViajeCanceladoAsync(id);
 
-            var viaje = bl.ObtenerDetalleViajeCancelado(id);
-
-            if (viaje == null)
+            if (!resultado.Exito || resultado.Datos == null)
             {
                 return NotFound();
             }
 
-            return View(viaje);
+            return View(resultado.Datos);
+        }
+
+        private bool UsuarioEsAdministrador()
+        {
+            string? rol = HttpContext.Session.GetString("Rol");
+            return rol == RolAdministrador;
         }
     }
 }

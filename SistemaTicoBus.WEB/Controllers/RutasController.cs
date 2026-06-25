@@ -1,204 +1,163 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 using SistemaTicoBus.MODEL.Entidades;
+using SistemaTicoBus.WEB.Services.Api;
 using System.Data;
 
 namespace SistemaTicoBus.WEB.Controllers
 {
     public class RutasController : Controller
     {
-        private readonly string _connectionString;
+        private const string RolAdministrador = "Administrador";
 
-        public RutasController(IConfiguration configuration)
+        private readonly ITicoBusApiClient _apiClient;
+
+        public RutasController(ITicoBusApiClient apiClient)
         {
-            _connectionString = configuration.GetConnectionString("DefaultConnection") ?? string.Empty;
+            _apiClient = apiClient;
         }
 
-        // OBTENER DATOS PARA EDICIÓN
         [HttpGet]
-        public IActionResult ObtenerRuta(int id)
+        public async Task<IActionResult> ObtenerRuta(int id)
         {
-            using (SqlConnection connection = new SqlConnection(_connectionString))
+            if (!UsuarioEsAdministrador())
             {
-                connection.Open();
-                string query = "SELECT Id, Nombre, Origen, Destino, DuracionEstimada, PrecioBase FROM Rutas WHERE Id = @Id";
-                using (SqlCommand command = new SqlCommand(query, connection))
-                {
-                    command.Parameters.AddWithValue("@Id", id);
-                    using (SqlDataReader reader = command.ExecuteReader())
-                    {
-                        if (reader.Read())
-                        {
-                            TempData["RutaEditarId"] = reader["Id"].ToString();
-                            TempData["RutaEditarNombre"] = reader["Nombre"].ToString();
-                            TempData["RutaEditarOrigen"] = reader["Origen"].ToString();
-                            TempData["RutaEditarDestino"] = reader["Destino"].ToString();
-                            TempData["RutaEditarDuracionEstimada"] = reader["DuracionEstimada"].ToString();
-                            TempData["RutaEditarPrecioBase"] = reader["PrecioBase"].ToString();
-                        }
-                    }
-                }
+                return RedirectToAction("Login", "Account");
             }
+
+            ApiResultado<Ruta> resultado = await _apiClient.ObtenerRutaAsync(id);
+
+            if (resultado.Exito && resultado.Datos != null)
+            {
+                TempData["RutaEditarId"] = resultado.Datos.Id.ToString();
+                TempData["RutaEditarNombre"] = resultado.Datos.Nombre;
+                TempData["RutaEditarOrigen"] = resultado.Datos.Origen;
+                TempData["RutaEditarDestino"] = resultado.Datos.Destino;
+                TempData["RutaEditarDuracionEstimada"] = resultado.Datos.DuracionEstimada.ToString(@"hh\:mm");
+                TempData["RutaEditarPrecioBase"] = resultado.Datos.PrecioBase.ToString();
+            }
+            else
+            {
+                TempData["MensajeError"] = resultado.Mensaje;
+            }
+
             return RedirectToAction("AdminDashboard", "Account");
         }
 
-        // EDITAR RUTA
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Editar(int id, string nombre, string origen, string destino, string duracion, decimal precioBase)
+        public async Task<IActionResult> Editar(int id, string nombre, string origen, string destino, string duracion, decimal precioBase)
         {
-            string? rol = HttpContext.Session.GetString("Rol");
-            if (rol != "Administrador")
+            if (!UsuarioEsAdministrador())
             {
                 TempData["MensajeError"] = "Acceso denegado.";
                 return RedirectToAction("AdminDashboard", "Account");
             }
 
-            // Validar precio positivo
-            if (precioBase <= 0)
+            if (!TimeSpan.TryParse(duracion, out TimeSpan duracionParsed))
             {
-                TempData["MensajeError"] = "El precio base debe ser mayor a cero.";
+                TempData["MensajeError"] = "El formato de duración no es válido. Use hh:mm.";
+                return RedirectToAction("AdminDashboard", "Account");
+            }
+
+            Ruta ruta = new Ruta
+            {
+                Id = id,
+                Nombre = nombre,
+                Origen = origen,
+                Destino = destino,
+                DuracionEstimada = duracionParsed,
+                PrecioBase = precioBase
+            };
+
+            ApiResultado<Ruta> resultado = await _apiClient.EditarRutaAsync(id, ruta);
+
+            if (!resultado.Exito)
+                TempData["MensajeError"] = resultado.Mensaje;
+            else
+                TempData["MensajeExito"] = resultado.Mensaje;
+
+            return RedirectToAction("AdminDashboard", "Account");
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Crear(string nombre, string origen, string destino, string duracion, decimal precioBase)
+        {
+            if (!UsuarioEsAdministrador())
+            {
                 return RedirectToAction("AdminDashboard", "Account");
             }
 
             if (!TimeSpan.TryParse(duracion, out TimeSpan duracionParsed))
             {
-                TempData["MensajeError"] = "El formato de duración no es válido. Use hh:mm (ejemplo: 01:30).";
+                TempData["MensajeError"] = "El formato de duración no es válido. Use hh:mm.";
                 return RedirectToAction("AdminDashboard", "Account");
             }
 
-            using (SqlConnection connection = new SqlConnection(_connectionString))
+            Ruta ruta = new Ruta
             {
-                connection.Open();
-                string query = @"UPDATE Rutas 
-                                 SET Nombre = @Nombre, Origen = @Origen, Destino = @Destino,
-                                     DuracionEstimada = @DuracionEstimada, PrecioBase = @PrecioBase 
-                                 WHERE Id = @Id";
+                Nombre = nombre,
+                Origen = origen,
+                Destino = destino,
+                DuracionEstimada = duracionParsed,
+                PrecioBase = precioBase
+            };
 
-                using (SqlCommand command = new SqlCommand(query, connection))
-                {
-                    command.Parameters.AddWithValue("@Id", id);
-                    command.Parameters.AddWithValue("@Nombre", nombre);
-                    command.Parameters.AddWithValue("@Origen", origen);
-                    command.Parameters.AddWithValue("@Destino", destino);
-                    command.Parameters.AddWithValue("@DuracionEstimada", duracionParsed);
-                    command.Parameters.AddWithValue("@PrecioBase", precioBase);
+            ApiResultado<Ruta> resultado = await _apiClient.CrearRutaAsync(ruta);
 
-                    command.ExecuteNonQuery();
-                }
-            }
+            if (!resultado.Exito)
+                TempData["MensajeError"] = resultado.Mensaje;
+            else
+                TempData["MensajeExito"] = resultado.Mensaje;
 
-            TempData["MensajeExito"] = "Ruta actualizada correctamente.";
-            return RedirectToAction("AdminDashboard", "Account");
-        }
-
-        // CREAR RUTA 
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public IActionResult Crear(string nombre, string origen, string destino, string duracion, decimal precioBase)
-        {
-            if (HttpContext.Session.GetString("Rol") != "Administrador")
-                return RedirectToAction("AdminDashboard", "Account");
-
-            // Validar precio positivo
-            if (precioBase <= 0)
-            {
-                TempData["MensajeError"] = "El precio base debe ser mayor a cero.";
-                return RedirectToAction("AdminDashboard", "Account");
-            }
-
-            if (!TimeSpan.TryParse(duracion, out TimeSpan duracionParsed))
-            {
-                TempData["MensajeError"] = "El formato de duración no es válido. Use hh:mm (ejemplo: 01:30).";
-                return RedirectToAction("AdminDashboard", "Account");
-            }
-
-            using (SqlConnection connection = new SqlConnection(_connectionString))
-            {
-                connection.Open();
-                string query = "INSERT INTO Rutas (Nombre, Origen, Destino, DuracionEstimada, PrecioBase) VALUES (@N, @O, @D, @Dur, @P)";
-                using (SqlCommand command = new SqlCommand(query, connection))
-                {
-                    command.Parameters.AddWithValue("@N", nombre);
-                    command.Parameters.AddWithValue("@O", origen);
-                    command.Parameters.AddWithValue("@D", destino);
-                    command.Parameters.AddWithValue("@Dur", duracionParsed);
-                    command.Parameters.AddWithValue("@P", precioBase);
-                    command.ExecuteNonQuery();
-                }
-            }
-
-            TempData["MensajeExito"] = "Ruta registrada correctamente.";
-            return RedirectToAction("AdminDashboard", "Account");
-        }
-
-        // ELIMINAR RUTA
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public IActionResult EliminarRuta(int id)
-        {
-            if (HttpContext.Session.GetString("Rol") == "Administrador")
-            {
-                using (SqlConnection connection = new SqlConnection(_connectionString))
-                {
-                    connection.Open();
-                    string query = "DELETE FROM Rutas WHERE Id = @Id";
-                    using (SqlCommand command = new SqlCommand(query, connection))
-                    {
-                        command.Parameters.AddWithValue("@Id", id);
-                        command.ExecuteNonQuery();
-                    }
-                }
-            }
             return RedirectToAction("AdminDashboard", "Account");
         }
 
         [HttpGet]
-        public IActionResult ListadoRutas(string buscar)
+        public async Task<IActionResult> ListadoRutas(string buscar)
         {
-            List<Ruta> rutas = new List<Ruta>();
-
-            using (SqlConnection connection = new SqlConnection(_connectionString))
+            if (!UsuarioEsAdministrador())
             {
-                connection.Open();
-                string query = @"
-                    SELECT Id, Nombre, Origen, Destino, DuracionEstimada, PrecioBase
-                    FROM Rutas
-                    WHERE (@buscar IS NULL
-                           OR Nombre LIKE '%' + @buscar + '%'
-                           OR Destino LIKE '%' + @buscar + '%')
-                    ORDER BY Nombre";
-
-                using (SqlCommand command = new SqlCommand(query, connection))
-                {
-                    command.Parameters.AddWithValue("@buscar",
-                        string.IsNullOrWhiteSpace(buscar) ? (object)DBNull.Value : buscar);
-
-                    using (SqlDataReader reader = command.ExecuteReader())
-                    {
-                        while (reader.Read())
-                        {
-                            rutas.Add(new Ruta
-                            {
-                                Id = Convert.ToInt32(reader["Id"]),
-                                Nombre = reader["Nombre"].ToString(),
-                                Origen = reader["Origen"].ToString(),
-                                Destino = reader["Destino"].ToString(),
-                                DuracionEstimada = (TimeSpan)reader["DuracionEstimada"],
-                                PrecioBase = Convert.ToDecimal(reader["PrecioBase"])
-                            });
-                        }
-                    }
-                }
+                return RedirectToAction("Login", "Account");
             }
 
-            return View(rutas);
+            ApiResultado<List<Ruta>> resultado = await _apiClient.ObtenerRutasAsync(buscar);
+
+            if (!resultado.Exito || resultado.Datos == null)
+            {
+                TempData["MensajeError"] = resultado.Mensaje;
+                return View(new List<Ruta>());
+            }
+
+            return View(resultado.Datos);
         }
 
         [HttpGet]
         public IActionResult Index(string buscar)
         {
             return RedirectToAction("ListadoRutas", new { buscar });
+        }
+
+        private bool UsuarioEsAdministrador()
+        {
+            string? rol = HttpContext.Session.GetString("Rol");
+            return rol == RolAdministrador;
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EliminarRuta(int id)
+        {
+            ApiResultado<object> resultado =
+                await _apiClient.EliminarRutaAsync(id);
+
+            if (!resultado.Exito)
+                TempData["MensajeError"] = resultado.Mensaje;
+            else
+                TempData["MensajeExito"] = resultado.Mensaje;
+
+            return RedirectToAction("AdminDashboard", "Account");
         }
     }
 }

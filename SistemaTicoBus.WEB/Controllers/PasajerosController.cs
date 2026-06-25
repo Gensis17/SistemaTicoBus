@@ -1,93 +1,122 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using SistemaTicoBus.BL;
 using SistemaTicoBus.DA.Repositorios;
 using SistemaTicoBus.MODEL.Entidades;
+using SistemaTicoBus.WEB.Services.Api;
 
 namespace SistemaTicoBus.WEB.Controllers
 {
     public class PasajerosController : Controller
     {
-        private readonly PasajeroRepositorio _repository = new PasajeroRepositorio();
-        private readonly ReservaBL _reservaBL = new ReservaBL();
+        private const string RolAdministrador = "Administrador";
 
-        public IActionResult ListadoPasajeros(string buscarNombre, string identificacionEditar)
+        private readonly ITicoBusApiClient _apiClient;
+
+        public PasajerosController(ITicoBusApiClient apiClient)
         {
-            var pasajeros = _repository.ObtenerPasajeros(buscarNombre);
+            _apiClient = apiClient;
+        }
+
+        public async Task<IActionResult> ListadoPasajeros(string buscarNombre, string identificacionEditar)
+        {
+            if (!UsuarioEsAdministrador())
+            {
+                return RedirectToAction("Login", "Account");
+            }
+
+            ApiResultado<List<Pasajero>> resultado = await _apiClient.ObtenerPasajerosAsync(buscarNombre);
+
+            if (!resultado.Exito || resultado.Datos == null)
+            {
+                TempData["MensajeError"] = resultado.Mensaje;
+                ViewBag.Busqueda = buscarNombre;
+                return View(new List<Pasajero>());
+            }
+
             ViewBag.Busqueda = buscarNombre;
 
-            if (!string.IsNullOrEmpty(identificacionEditar))
+            if (!string.IsNullOrWhiteSpace(identificacionEditar))
             {
-                var pasajero = _repository.ObtenerPasajeroPorId(identificacionEditar);
-                ViewBag.PasajeroEditar = pasajero;
-                ViewBag.IdOriginal = identificacionEditar;
+                ApiResultado<Pasajero> pasajeroResultado =
+                    await _apiClient.ObtenerPasajeroAsync(identificacionEditar);
+
+                if (pasajeroResultado.Exito)
+                {
+                    ViewBag.PasajeroEditar = pasajeroResultado.Datos;
+                    ViewBag.IdOriginal = identificacionEditar;
+                }
             }
 
-            return View(pasajeros);
+            return View(resultado.Datos);
         }
 
         [HttpPost]
-        public IActionResult RegistrarPasajeroGuardar(Pasajero model)
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> RegistrarPasajeroGuardar(Pasajero model)
         {
-            if (!string.IsNullOrEmpty(model.Identificacion) &&
-                !string.IsNullOrEmpty(model.Nombre) &&
-                !string.IsNullOrEmpty(model.Apellidos) &&
-                !string.IsNullOrEmpty(model.Correo))
+            if (!UsuarioEsAdministrador())
             {
-                try
-                {
-                    model.Clave = "Pasa123*";
-                    model.Rol = "Pasajero";
+                return RedirectToAction("Login", "Account");
+            }
 
-                    _repository.RegistrarPasajero(model);
+            NormalizarPasajero(model);
 
-                    TempData["MensajeExito"] = $"Pasajero registrado con éxito. Cuenta creada para: {model.Correo}";
-                }
-                catch (InvalidOperationException ex)
-                {
-                    TempData["MensajeError"] = ex.Message;
-                }
-                catch (Exception)
-                {
-                    TempData["MensajeError"] = "Ocurrió un error inesperado al registrar el pasajero. Intente de nuevo.";
-                }
+            ApiResultado<Pasajero> resultado = await _apiClient.CrearPasajeroAsync(model);
+
+            if (!resultado.Exito)
+            {
+                TempData["MensajeError"] = resultado.Mensaje;
             }
             else
             {
-                TempData["MensajeError"] = "Todos los campos son requeridos: Identificación, Nombre, Apellidos y Correo.";
+                TempData["MensajeExito"] = resultado.Mensaje;
             }
 
-            return RedirectToAction("ListadoPasajeros");
+            return RedirectToAction(nameof(ListadoPasajeros));
         }
 
         [HttpPost]
-        public IActionResult EditarPasajeroGuardar(Pasajero model, string idOriginal)
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EditarPasajeroGuardar(Pasajero model, string idOriginal)
         {
-            if (!string.IsNullOrEmpty(model.Identificacion) &&
-                !string.IsNullOrEmpty(model.Nombre) &&
-                !string.IsNullOrEmpty(model.Apellidos) &&
-                !string.IsNullOrEmpty(model.Correo) &&
-                !string.IsNullOrEmpty(idOriginal))
+            if (!UsuarioEsAdministrador())
             {
-                try
-                {
-                    _repository.EditarPasajero(model, idOriginal);
-                    TempData["MensajeExito"] = "Los datos del pasajero fueron actualizados con éxito.";
-                }
-                catch (InvalidOperationException ex)
-                {
-                    TempData["MensajeError"] = ex.Message;
-                }
-                catch (Exception)
-                {
-                    TempData["MensajeError"] = "Ocurrió un error inesperado al actualizar el pasajero. Intente de nuevo.";
-                }
+                return RedirectToAction("Login", "Account");
+            }
+
+            NormalizarPasajero(model);
+
+            if (string.IsNullOrWhiteSpace(idOriginal))
+            {
+                TempData["MensajeError"] = "No se recibió la identificación original del pasajero.";
+                return RedirectToAction(nameof(ListadoPasajeros));
+            }
+
+            ApiResultado<Pasajero> resultado = await _apiClient.EditarPasajeroAsync(idOriginal, model);
+
+            if (!resultado.Exito)
+            {
+                TempData["MensajeError"] = resultado.Mensaje;
             }
             else
             {
-                TempData["MensajeError"] = "No se pudieron guardar los cambios. Verifique que no queden campos vacíos.";
+                TempData["MensajeExito"] = resultado.Mensaje;
             }
 
-            return RedirectToAction("ListadoPasajeros");
+            return RedirectToAction(nameof(ListadoPasajeros));
+        }
+
+        private bool UsuarioEsAdministrador()
+        {
+            string? rol = HttpContext.Session.GetString("Rol");
+            return rol == RolAdministrador;
+        }
+
+        private void NormalizarPasajero(Pasajero model)
+        {
+            model.Identificacion = model.Identificacion?.Trim() ?? string.Empty;
+            model.Nombre = model.Nombre?.Trim() ?? string.Empty;
+            model.Apellidos = model.Apellidos?.Trim() ?? string.Empty;
+            model.Correo = model.Correo?.Trim() ?? string.Empty;
         }
     }
 }
