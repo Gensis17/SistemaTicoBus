@@ -100,5 +100,10 @@ namespace SistemaTicoBus.DA.Repositorios
 
             return lista;
         }
+        public Reserva ObtenerReservaPorIdPasajero(int idReserva, string nombreUsuario)
+        {
+            var lista = ObtenerReservasPorPasajero(nombreUsuario);
+            return lista.FirstOrDefault(r => r.IdReserva == idReserva);
+        }
     }
 }

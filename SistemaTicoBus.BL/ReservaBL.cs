@@ -14,5 +14,9 @@ namespace SistemaTicoBus.BL
         {
             return _repositorio.ObtenerReservasPorPasajero(nombreUsuario);
         }
+        public Reserva ObtenerDetalleMisViajes(int idReserva, string nombreUsuario)
+        {
+            return _repositorio.ObtenerReservaPorIdPasajero(idReserva, nombreUsuario);
+        }
     }
 }

@@ -3,6 +3,7 @@ using Microsoft.Data.SqlClient;
 using SistemaTicoBus.BL;
 using SistemaTicoBus.DA.Data;
 using SistemaTicoBus.DA.Repositorios;
+using SistemaTicoBus.MODEL.Entidades;
 using SistemaTicoBus.WEB.Models;
 using SistemaTicoBus.WEB.Services.Api;
 using System.Data;
@@ -253,8 +254,7 @@ namespace SistemaTicoBus.WEB.Controllers
                 });
             }
         }
-
-        public IActionResult PasajeroDashboard(string tab = "viajes")
+        public async Task<IActionResult> PasajeroDashboard(string tab = "viajes")
         {
             if (!UsuarioTieneRol(RolPasajero))
             {
@@ -268,13 +268,19 @@ namespace SistemaTicoBus.WEB.Controllers
                 return RedirectToAction(nameof(Login));
             }
 
-            ReservaRepositorio repo = new ReservaRepositorio();
-            var misViajes = repo.ObtenerReservasPorPasajero(nombreUsuario);
+            ApiResultado<List<Reserva>> resultado =
+                await _apiClient.ObtenerMisViajesAsync(nombreUsuario);
+
+            if (!resultado.Exito || resultado.Datos == null)
+            {
+                TempData["MensajeError"] = resultado.Mensaje;
+                ViewBag.Tab = tab;
+                return View(new List<Reserva>());
+            }
 
             ViewBag.Tab = tab;
-            return View(misViajes);
+            return View(resultado.Datos);
         }
-
         private bool UsuarioTieneRol(string rolRequerido)
         {
             string? rolSesion = HttpContext.Session.GetString("Rol");

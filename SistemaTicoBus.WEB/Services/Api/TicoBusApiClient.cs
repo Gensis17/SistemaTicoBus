@@ -258,6 +258,18 @@ namespace SistemaTicoBus.WEB.Services.Api
             return await PutAsync<object, object>($"api/viajesencurso/{idViaje}/finalizar", request);
         }
 
+        public async Task<ApiResultado<List<Reserva>>> ObtenerMisViajesAsync(string nombreUsuario)
+        {
+            return await GetAsync<List<Reserva>>(
+                $"api/misviajes/{Uri.EscapeDataString(nombreUsuario)}");
+        }
+
+        public async Task<ApiResultado<Reserva>> ObtenerDetalleMisViajeAsync(string nombreUsuario, int idReserva)
+        {
+            return await GetAsync<Reserva>(
+                $"api/misviajes/{Uri.EscapeDataString(nombreUsuario)}/{idReserva}");
+        }
+
         private async Task<ApiResultado<TResponse>> GetAsync<TResponse>(string url)
         {
             try

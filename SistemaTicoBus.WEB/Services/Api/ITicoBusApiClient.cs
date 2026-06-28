@@ -45,6 +45,9 @@ namespace SistemaTicoBus.WEB.Services.Api
         Task<ApiResultado<object>> ReservarViajeEnCursoAsync(int idViaje, string idPasajero, int numeroAsiento);
         Task<ApiResultado<object>> CancelarReservaViajeEnCursoAsync(int idReserva);
         Task<ApiResultado<object>> FinalizarViajeEnCursoAsync(int idViaje);
+
+        Task<ApiResultado<List<Reserva>>> ObtenerMisViajesAsync(string nombreUsuario);
+        Task<ApiResultado<Reserva>> ObtenerDetalleMisViajeAsync(string nombreUsuario, int idReserva);
     }
 
     public class ApiResultado<T>
