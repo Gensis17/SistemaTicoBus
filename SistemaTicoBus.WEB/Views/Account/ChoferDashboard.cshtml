@@ -14,6 +14,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&display=swap" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
 </head>
+
 <body class="bg-[#f4f6f8] font-['Montserrat'] text-gray-900 min-h-screen flex">
 
     <aside class="hidden md:flex flex-col h-screen w-64 bg-white border-r border-gray-200 shadow-sm py-6 shrink-0">
@@ -26,34 +27,58 @@
         </div>
 
         <nav class="flex-1 px-3 space-y-2">
-            <a class="flex items-center gap-3 bg-[#e0f2f1] text-[#004d40] font-semibold rounded-lg px-3 py-2.5 transition-all" href="/Account/ChoferDashboard">
+            <a class="flex items-center gap-3 bg-[#e0f2f1] text-[#004d40] font-semibold rounded-lg px-3 py-2.5 transition-all"
+                   href="/Account/ChoferDashboard">
                 <span class="material-symbols-outlined">account_circle</span>
                 <span class="text-sm">Mi Perfil</span>
             </a>
 
-            <a class="flex items-center gap-3 text-gray-600 hover:bg-gray-100 rounded-lg px-3 py-2.5 transition-colors" href="/Pasajeros/ListadoPasajeros">
+            <a class="flex items-center gap-3 text-gray-600 hover:bg-gray-100 rounded-lg px-3 py-2.5 transition-colors"
+                   href="/Pasajeros/ListadoPasajeros">
                 <span class="material-symbols-outlined">person_add</span>
                 <span class="text-sm font-medium">Registrar Pasajero</span>
             </a>
 
-            <a class="flex items-center gap-3 text-gray-600 hover:bg-gray-100 rounded-lg px-3 py-2.5 transition-colors" href="@Url.Action("Index", "Unidad")">
+            <a class="flex items-center gap-3 text-gray-600 hover:bg-gray-100 rounded-lg px-3 py-2.5 transition-colors"
+                   href="/Rutas/Index">
                 <span class="material-symbols-outlined">explore</span>
                 <span class="text-sm font-medium">Catálogo de Rutas</span>
             </a>
 
-            <a class="flex items-center gap-3 text-gray-600 hover:bg-gray-100 rounded-lg px-3 py-2.5 transition-colors" href="/Account/ChangePassword">
-                <span class="material-symbols-outlined">lock_reset</span>
-                <span class="text-sm font-medium">Cambiar clave</span>
+            <a class="flex items-center gap-3 text-gray-600 hover:bg-gray-100 rounded-lg px-3 py-2.5 transition-colors"
+                   href="/Unidad/Index">
+                <span class="material-symbols-outlined">directions_bus</span>
+                <span class="text-sm font-medium">Catálogo de Unidades</span>
             </a>
 
-            <a class="flex items-center gap-3 text-gray-600 hover:bg-gray-100 rounded-lg px-3 py-2.5 transition-colors" href="#">
-                <span class="material-symbols-outlined">directions_bus</span>
-                <span class="text-sm font-medium">Mis Viajes</span>
+            <a class="flex items-center gap-3 text-gray-600 hover:bg-gray-100 rounded-lg px-3 py-2.5 transition-colors"
+                   href="/Viajes/Index">
+                <span class="material-symbols-outlined">calendar_month</span>
+                <span class="text-sm font-medium">Gestión de Viajes</span>
+            </a>
+
+            <a class="flex items-center gap-3 text-gray-600 hover:bg-gray-100 rounded-lg px-3 py-2.5 transition-colors"
+                   href="/ViajesEnCurso/Index">
+                <span class="material-symbols-outlined">play_circle</span>
+                <span class="text-sm font-medium">Viajes en Curso</span>
+            </a>
+
+            <a class="flex items-center gap-3 text-gray-600 hover:bg-gray-100 rounded-lg px-3 py-2.5 transition-colors"
+                   href="/ViajeCancelado/Index">
+                <span class="material-symbols-outlined">event_busy</span>
+                <span class="text-sm font-medium">Viajes Cancelados</span>
+            </a>
+
+            <a class="flex items-center gap-3 text-gray-600 hover:bg-gray-100 rounded-lg px-3 py-2.5 transition-colors"
+                   href="/Account/ChangePassword">
+                <span class="material-symbols-outlined">lock_reset</span>
+                <span class="text-sm font-medium">Cambiar clave</span>
             </a>
         </nav>
 
         <div class="px-4 border-t border-gray-200 pt-4">
-            <a class="flex items-center gap-3 text-red-600 hover:bg-red-50 rounded-lg px-3 py-2 transition-colors" href="/Account/Logout">
+            <a class="flex items-center gap-3 text-red-600 hover:bg-red-50 rounded-lg px-3 py-2 transition-colors"
+                   href="/Account/Logout">
                 <span class="material-symbols-outlined">logout</span>
                 <span class="text-sm font-medium">Cerrar Sesión</span>
             </a>
@@ -69,14 +94,31 @@
         <main class="flex-1 overflow-y-auto p-6 space-y-6">
             <div class="text-xs font-bold text-gray-400 tracking-wider">CHOFER ➔ MI PERFIL</div>
 
+            @if (TempData["MensajeError"] != null)
+            {
+                <div class="max-w-4xl mx-auto bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-xl text-sm">
+                    @TempData["MensajeError"]
+                </div>
+            }
+
+            @if (TempData["MensajeExito"] != null)
+            {
+                <div class="max-w-4xl mx-auto bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-xl text-sm">
+                    @TempData["MensajeExito"]
+                </div>
+            }
+
             <div class="bg-gradient-to-r from-blue-700 to-blue-900 text-white rounded-2xl shadow-xl p-8 max-w-2xl mx-auto space-y-4">
                 <div class="flex items-center gap-4">
                     <div class="bg-white/20 p-4 rounded-full">
                         <span class="material-symbols-outlined text-4xl">account_box</span>
                     </div>
+
                     <div>
                         <h2 class="text-2xl font-black tracking-tight">@Model.NombreCompleto</h2>
-                        <span class="inline-block bg-teal-400 text-slate-900 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full mt-1">@Model.Rol</span>
+                        <span class="inline-block bg-teal-400 text-slate-900 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full mt-1">
+                            @Model.Rol
+                        </span>
                     </div>
                 </div>
 
@@ -85,6 +127,7 @@
                         <p class="text-xs text-blue-200 font-bold uppercase">Identificación</p>
                         <p class="font-mono mt-0.5">@Model.Identificacion</p>
                     </div>
+
                     <div>
                         <p class="text-xs text-blue-200 font-bold uppercase">Terminal Base</p>
                         <p class="mt-0.5">Terminal Central 7-10</p>
@@ -110,6 +153,7 @@
                                 <th class="px-6 py-3 text-left">Estado</th>
                             </tr>
                         </thead>
+
                         <tbody class="divide-y divide-gray-100">
                             @if (Model.Viajes != null && Model.Viajes.Any())
                             {
