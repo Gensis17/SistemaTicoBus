@@ -1,8 +1,11 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using SistemaTicoBus.API.Models;
+using SistemaTicoBus.BL.Servicios;
 using SistemaTicoBus.DA.Repositorios;
 using SistemaTicoBus.MODEL.Entidades;
 using System.ComponentModel.DataAnnotations;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace SistemaTicoBus.API.Controllers
@@ -12,10 +15,12 @@ namespace SistemaTicoBus.API.Controllers
     public class PasajerosApiController : ControllerBase
     {
         private readonly PasajeroRepositorio _repository;
+        private readonly IEmailServicio _emailServicio;
 
-        public PasajerosApiController(PasajeroRepositorio repository)
+        public PasajerosApiController(PasajeroRepositorio repository, IEmailServicio emailServicio)
         {
             _repository = repository;
+            _emailServicio = emailServicio;
         }
 
         [HttpGet]
@@ -66,7 +71,7 @@ namespace SistemaTicoBus.API.Controllers
         }
 
         [HttpPost]
-        public ActionResult<ApiRespuesta<Pasajero>> Agregar(Pasajero model)
+        public async Task<ActionResult<ApiRespuesta<Pasajero>>> Agregar(Pasajero model)
         {
             NormalizarPasajero(model);
 
@@ -79,15 +84,34 @@ namespace SistemaTicoBus.API.Controllers
 
             try
             {
-                model.Clave = "Pasa123*";
+                string claveGenerada = GenerarClaveAleatoria();
+
+                model.Clave = claveGenerada;
                 model.Rol = "Pasajero";
 
-                _repository.RegistrarPasajero(model);
+                string nombreUsuario = _repository.RegistrarPasajero(model);
 
-                return Ok(ApiRespuesta<Pasajero>.Ok(
-                    model,
-                    "Pasajero registrado correctamente."
-                ));
+                bool correoEnviado = await IntentarEnviarClavePasajeroAsync(
+                    model.Correo,
+                    nombreUsuario,
+                    claveGenerada
+                );
+
+                Pasajero respuesta = new Pasajero
+                {
+                    Identificacion = model.Identificacion,
+                    Nombre = model.Nombre,
+                    Apellidos = model.Apellidos,
+                    Correo = model.Correo,
+                    Clave = string.Empty,
+                    Rol = "Pasajero"
+                };
+
+                string mensaje = correoEnviado
+                    ? "Pasajero registrado correctamente. La clave temporal fue enviada al correo indicado."
+                    : "Pasajero registrado correctamente, pero no se pudo enviar el correo con la clave temporal. Revise la configuración de Mailtrap.";
+
+                return Ok(ApiRespuesta<Pasajero>.Ok(respuesta, mensaje));
             }
             catch (InvalidOperationException ex)
             {
@@ -124,8 +148,18 @@ namespace SistemaTicoBus.API.Controllers
             {
                 _repository.EditarPasajero(model, idOriginal);
 
+                Pasajero respuesta = new Pasajero
+                {
+                    Identificacion = model.Identificacion,
+                    Nombre = model.Nombre,
+                    Apellidos = model.Apellidos,
+                    Correo = model.Correo,
+                    Clave = string.Empty,
+                    Rol = "Pasajero"
+                };
+
                 return Ok(ApiRespuesta<Pasajero>.Ok(
-                    model,
+                    respuesta,
                     "Pasajero actualizado correctamente."
                 ));
             }
@@ -142,13 +176,60 @@ namespace SistemaTicoBus.API.Controllers
             }
         }
 
+        private async Task<bool> IntentarEnviarClavePasajeroAsync(string correo, string nombreUsuario, string claveGenerada)
+        {
+            string asunto = "Usuario Pasajero creado — TicoBus";
+
+            string cuerpo =
+                $"Se creó su usuario de Pasajero en TicoBus.\n\n" +
+                $"Nombre de usuario: {nombreUsuario}\n" +
+                $"Clave temporal: {claveGenerada}\n\n" +
+                $"Por seguridad, cambie su clave al ingresar al sistema.";
+
+            try
+            {
+                await _emailServicio.EnviarCorreoAsync(correo, asunto, cuerpo);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private string GenerarClaveAleatoria()
+        {
+            const string letras = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz";
+            const string numeros = "23456789";
+            const string especiales = "*@#";
+            const string todos = letras + numeros + especiales;
+
+            StringBuilder clave = new StringBuilder();
+
+            clave.Append(letras[RandomNumberGenerator.GetInt32(letras.Length)]);
+            clave.Append(numeros[RandomNumberGenerator.GetInt32(numeros.Length)]);
+            clave.Append(especiales[RandomNumberGenerator.GetInt32(especiales.Length)]);
+
+            for (int i = 0; i < 7; i++)
+            {
+                clave.Append(todos[RandomNumberGenerator.GetInt32(todos.Length)]);
+            }
+
+            return new string(
+                clave
+                    .ToString()
+                    .OrderBy(_ => RandomNumberGenerator.GetInt32(int.MaxValue))
+                    .ToArray()
+            );
+        }
+
         private void NormalizarPasajero(Pasajero model)
         {
             model.Identificacion = NormalizarTexto(model.Identificacion);
             model.Nombre = NormalizarTexto(model.Nombre);
             model.Apellidos = NormalizarTexto(model.Apellidos);
             model.Correo = NormalizarTexto(model.Correo).ToLowerInvariant();
-            model.Clave = string.IsNullOrWhiteSpace(model.Clave) ? "Pasa123*" : model.Clave.Trim();
+            model.Clave = model.Clave?.Trim() ?? string.Empty;
             model.Rol = "Pasajero";
         }
 

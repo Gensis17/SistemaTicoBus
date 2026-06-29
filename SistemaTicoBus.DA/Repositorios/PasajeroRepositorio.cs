@@ -15,7 +15,7 @@ namespace SistemaTicoBus.DA.Repositorios
             _connectionString = connectionString;
         }
 
-        public void RegistrarPasajero(Pasajero pasajero)
+        public string RegistrarPasajero(Pasajero pasajero)
         {
             using SqlConnection conn = new SqlConnection(_connectionString);
             conn.Open();
@@ -49,6 +49,8 @@ namespace SistemaTicoBus.DA.Repositorios
                 CrearRegistroPasajero(conn, transaction, pasajero, nuevoUsuarioId);
 
                 transaction.Commit();
+
+                return nombreUsuario;
             }
             catch
             {
@@ -95,6 +97,7 @@ namespace SistemaTicoBus.DA.Repositorios
                     Nombre = reader["Nombre"].ToString() ?? string.Empty,
                     Apellidos = reader["Apellidos"].ToString() ?? string.Empty,
                     Correo = reader["Correo"].ToString() ?? string.Empty,
+                    Clave = string.Empty,
                     Rol = "Pasajero"
                 });
             }
@@ -133,6 +136,7 @@ namespace SistemaTicoBus.DA.Repositorios
                 Nombre = reader["Nombre"].ToString() ?? string.Empty,
                 Apellidos = reader["Apellidos"].ToString() ?? string.Empty,
                 Correo = reader["Correo"].ToString() ?? string.Empty,
+                Clave = string.Empty,
                 Rol = "Pasajero"
             };
         }
@@ -185,14 +189,14 @@ namespace SistemaTicoBus.DA.Repositorios
         {
             string query = @"
                 INSERT INTO Usuarios
-                    (NombreUsuario, Clave, Correo, RolId, IntentosFallidos)
+                    (NombreUsuario, Clave, Correo, RolId, BloqueadoHasta, IntentosFallidos)
                 OUTPUT INSERTED.Id
                 VALUES
-                    (@NombreUsuario, @Clave, @Correo, @RolId, 0)";
+                    (@NombreUsuario, @Clave, @Correo, @RolId, NULL, 0)";
 
             using SqlCommand cmd = new SqlCommand(query, conn, transaction);
             cmd.Parameters.AddWithValue("@NombreUsuario", nombreUsuario);
-            cmd.Parameters.AddWithValue("@Clave", string.IsNullOrWhiteSpace(clave) ? "Pasa123*" : clave);
+            cmd.Parameters.AddWithValue("@Clave", clave);
             cmd.Parameters.AddWithValue("@Correo", correo);
             cmd.Parameters.AddWithValue("@RolId", rolPasajeroId);
 
@@ -258,7 +262,12 @@ namespace SistemaTicoBus.DA.Repositorios
             cmd.Parameters.AddWithValue("@Apellidos", pasajero.Apellidos);
             cmd.Parameters.AddWithValue("@IdOriginal", idOriginal);
 
-            cmd.ExecuteNonQuery();
+            int filasAfectadas = cmd.ExecuteNonQuery();
+
+            if (filasAfectadas == 0)
+            {
+                throw new InvalidOperationException("El pasajero que intenta editar ya no existe.");
+            }
         }
 
         private int ObtenerRolPasajeroId(SqlConnection conn, SqlTransaction transaction)
