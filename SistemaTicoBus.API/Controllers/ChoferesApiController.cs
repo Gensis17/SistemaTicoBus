@@ -23,6 +23,101 @@ namespace SistemaTicoBus.API.Controllers
             _emailServicio = emailServicio;
         }
 
+        [HttpGet("dashboard/{usuarioId}")]
+        public ActionResult<ApiRespuesta<ChoferDashboardViewModel>> ObtenerDashboardChofer(int usuarioId)
+        {
+            try
+            {
+                ChoferDashboardViewModel model = new ChoferDashboardViewModel
+                {
+                    Identificacion = "No disponible",
+                    NombreCompleto = "Chofer",
+                    Rol = "Chofer",
+                    Viajes = new List<ViajeAsignadoDTO>()
+                };
+
+                using SqlConnection connection = new SqlConnection(_connectionString);
+                connection.Open();
+
+                string choferQuery = @"
+            SELECT 
+                Identificacion,
+                Nombre,
+                Apellidos
+            FROM Choferes
+            WHERE UsuarioId = @UsuarioId";
+
+                string identificacionChofer = string.Empty;
+
+                using (SqlCommand command = new SqlCommand(choferQuery, connection))
+                {
+                    command.Parameters.Add("@UsuarioId", SqlDbType.Int).Value = usuarioId;
+
+                    using SqlDataReader reader = command.ExecuteReader();
+
+                    if (reader.Read())
+                    {
+                        identificacionChofer = reader["Identificacion"].ToString() ?? string.Empty;
+                        model.Identificacion = identificacionChofer;
+                        model.NombreCompleto = $"{reader["Nombre"]} {reader["Apellidos"]}";
+                    }
+                }
+
+                if (string.IsNullOrWhiteSpace(identificacionChofer))
+                {
+                    return Ok(ApiRespuesta<ChoferDashboardViewModel>.Ok(model, "No se encontró información del chofer."));
+                }
+
+                string viajesQuery = @"
+            SELECT 
+                v.NumeroViaje,
+                r.Nombre AS Ruta,
+                v.PlacaUnidad,
+                v.FechaHoraSalida,
+                v.Estado,
+                u.CapacidadPasajeros,
+                (
+                    SELECT COUNT(*) 
+                    FROM Reservas re 
+                    WHERE re.ViajeId = v.NumeroViaje
+                ) AS AsientosOcupados
+            FROM Viajes v
+            INNER JOIN Rutas r ON v.RutaId = r.Id
+            INNER JOIN Unidades u ON v.PlacaUnidad = u.Placa
+            WHERE v.ChoferId = @ChoferId
+            ORDER BY v.FechaHoraSalida DESC";
+
+                using (SqlCommand command = new SqlCommand(viajesQuery, connection))
+                {
+                    command.Parameters.Add("@ChoferId", SqlDbType.VarChar, 30).Value = identificacionChofer;
+
+                    using SqlDataReader reader = command.ExecuteReader();
+
+                    while (reader.Read())
+                    {
+                        model.Viajes.Add(new ViajeAsignadoDTO
+                        {
+                            IdViaje = reader["NumeroViaje"].ToString() ?? string.Empty,
+                            Ruta = reader["Ruta"].ToString() ?? string.Empty,
+                            UnidadPlaca = reader["PlacaUnidad"].ToString() ?? string.Empty,
+                            HorarioSalida = Convert.ToDateTime(reader["FechaHoraSalida"]).ToString("dd/MM/yyyy HH:mm"),
+                            Ocupacion = $"{reader["AsientosOcupados"]}/{reader["CapacidadPasajeros"]}",
+                            Estado = reader["Estado"].ToString() ?? string.Empty
+                        });
+                    }
+                }
+
+                return Ok(ApiRespuesta<ChoferDashboardViewModel>.Ok(model, "Dashboard del chofer cargado correctamente."));
+            }
+            catch (SqlException)
+            {
+                return StatusCode(
+                    StatusCodes.Status503ServiceUnavailable,
+                    ApiRespuesta<ChoferDashboardViewModel>.Error("No se pudieron cargar los viajes del chofer.")
+                );
+            }
+        }
+
         [HttpGet]
         public ActionResult<ApiRespuesta<List<ChoferDto>>> Listar([FromQuery] string? busqueda)
         {
@@ -770,5 +865,23 @@ namespace SistemaTicoBus.API.Controllers
         public string Identificacion { get; set; } = string.Empty;
         public string Nombre { get; set; } = string.Empty;
         public string Apellidos { get; set; } = string.Empty;
+    }
+
+    public class ChoferDashboardViewModel
+    {
+        public string Identificacion { get; set; } = string.Empty;
+        public string NombreCompleto { get; set; } = string.Empty;
+        public string Rol { get; set; } = string.Empty;
+        public List<ViajeAsignadoDTO> Viajes { get; set; } = new List<ViajeAsignadoDTO>();
+    }
+
+    public class ViajeAsignadoDTO
+    {
+        public string IdViaje { get; set; } = string.Empty;
+        public string Ruta { get; set; } = string.Empty;
+        public string UnidadPlaca { get; set; } = string.Empty;
+        public string HorarioSalida { get; set; } = string.Empty;
+        public string Ocupacion { get; set; } = string.Empty;
+        public string Estado { get; set; } = string.Empty;
     }
 }
