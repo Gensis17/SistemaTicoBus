@@ -9,11 +9,13 @@ namespace SistemaTicoBus.API.Controllers
     [Route("api/misviajes")]
     public class MisViajesApiController : ControllerBase
     {
+        private readonly ReservaBL reservaBL;
+
         private readonly ReservaBL _reservaBL;
 
-        public MisViajesApiController()
+        public MisViajesApiController(ReservaBL reservaBL)
         {
-            _reservaBL = new ReservaBL();
+            _reservaBL = reservaBL;
         }
 
         [HttpGet("{nombreUsuario}")]

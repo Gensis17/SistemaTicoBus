@@ -9,11 +9,11 @@ namespace SistemaTicoBus.API.Controllers
     [Route("api/viajescancelados")]
     public class ViajesCanceladosApiController : ControllerBase
     {
-        private readonly string _connectionString;
+        private readonly ViajeCanceladoBL _bl;
 
-        public ViajesCanceladosApiController(IConfiguration configuration)
+        public ViajesCanceladosApiController(ViajeCanceladoBL bl)
         {
-            _connectionString = configuration.GetConnectionString("DefaultConnection") ?? string.Empty;
+            _bl = bl;
         }
 
         [HttpGet]
@@ -21,9 +21,7 @@ namespace SistemaTicoBus.API.Controllers
         {
             try
             {
-                ViajeCanceladoBL bl = new ViajeCanceladoBL(_connectionString);
-                var lista = bl.ListarViajesCancelados();
-
+                var lista = _bl.ListarViajesCancelados();
                 return Ok(ApiRespuesta<List<ViajeCancelado>>.Ok(lista));
             }
             catch
@@ -37,8 +35,7 @@ namespace SistemaTicoBus.API.Controllers
         {
             try
             {
-                ViajeCanceladoBL bl = new ViajeCanceladoBL(_connectionString);
-                var viaje = bl.ObtenerDetalleViajeCancelado(id);
+                var viaje = _bl.ObtenerDetalleViajeCancelado(id);
 
                 if (viaje == null)
                 {

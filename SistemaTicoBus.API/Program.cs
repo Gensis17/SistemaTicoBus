@@ -14,7 +14,6 @@ builder.Services.AddControllers()
         options.JsonSerializerOptions.WriteIndented = true;
     });
 
-// Configuración del correo. La API es la encargada de enviar correos por Mailtrap.
 builder.Services.Configure<EmailSettings>(
     builder.Configuration.GetSection("EmailSettings")
 );
@@ -33,15 +32,41 @@ builder.Services.AddScoped<ViajeRepositorio>(provider =>
     )
 );
 
+builder.Services.AddScoped<UnidadRepositorio>(provider =>
+    new UnidadRepositorio(
+        builder.Configuration.GetConnectionString("DefaultConnection")!
+    )
+);
+
+builder.Services.AddScoped<PasajeroRepositorio>(provider =>
+    new PasajeroRepositorio(
+        builder.Configuration.GetConnectionString("DefaultConnection")!
+    )
+);
+
+builder.Services.AddScoped<ReservaRepositorio>(provider =>
+    new ReservaRepositorio(
+        builder.Configuration.GetConnectionString("DefaultConnection")!
+    )
+);
+
+builder.Services.AddScoped<ViajeCanceladoRepositorio>(provider =>
+    new ViajeCanceladoRepositorio(
+        builder.Configuration.GetConnectionString("DefaultConnection")!
+    )
+);
+
+// BL
 builder.Services.AddScoped<ViajeBL>();
+builder.Services.AddScoped<UnidadBL>();
+builder.Services.AddScoped<ReservaBL>();
+builder.Services.AddScoped<ViajeCanceladoBL>();
 builder.Services.AddScoped<ViajesEnCursoBL>();
 
 var app = builder.Build();
 
 app.UseRouting();
 
-// Middleware simple de API Key.
-// Toda petición que empiece con /api debe traer el header X-API-KEY correcto.
 app.Use(async (context, next) =>
 {
     if (context.Request.Path.StartsWithSegments("/api"))

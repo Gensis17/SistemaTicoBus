@@ -11,9 +11,9 @@ namespace SistemaTicoBus.API.Controllers
     {
         private readonly UnidadBL _unidadBL;
 
-        public UnidadesApiController()
+        public UnidadesApiController(UnidadBL unidadBL)
         {
-            _unidadBL = new UnidadBL();
+            _unidadBL = unidadBL;
         }
 
         [HttpGet]

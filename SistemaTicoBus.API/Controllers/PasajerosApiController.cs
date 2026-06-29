@@ -13,9 +13,9 @@ namespace SistemaTicoBus.API.Controllers
     {
         private readonly PasajeroRepositorio _repository;
 
-        public PasajerosApiController()
+        public PasajerosApiController(PasajeroRepositorio repository)
         {
-            _repository = new PasajeroRepositorio();
+            _repository = repository;
         }
 
         [HttpGet]
