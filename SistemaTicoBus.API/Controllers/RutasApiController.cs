@@ -216,24 +216,73 @@ namespace SistemaTicoBus.API.Controllers
         [HttpDelete("{id}")]
         public ActionResult<ApiRespuesta<object>> Eliminar(int id)
         {
+            if (id <= 0)
+            {
+                return BadRequest(ApiRespuesta<object>.Error("No se recibió el id de la ruta."));
+            }
+
             try
             {
                 using SqlConnection connection = new SqlConnection(_connectionString);
                 connection.Open();
 
-                using SqlCommand command = new SqlCommand(
-                    "DELETE FROM Rutas WHERE Id=@Id", connection);
+                string queryExiste = @"
+                    SELECT COUNT(1)
+                    FROM Rutas
+                    WHERE Id = @Id";
 
-                command.Parameters.AddWithValue("@Id", id);
+                using SqlCommand commandExiste = new SqlCommand(queryExiste, connection);
+                commandExiste.Parameters.Add("@Id", SqlDbType.Int).Value = id;
 
-                command.ExecuteNonQuery();
+                int existe = Convert.ToInt32(commandExiste.ExecuteScalar());
+
+                if (existe == 0)
+                {
+                    return NotFound(ApiRespuesta<object>.Error("No se encontró la ruta que intenta eliminar."));
+                }
+
+                string queryViajes = @"
+                    SELECT COUNT(1)
+                    FROM Viajes
+                    WHERE RutaId = @Id";
+
+                using SqlCommand commandViajes = new SqlCommand(queryViajes, connection);
+                commandViajes.Parameters.Add("@Id", SqlDbType.Int).Value = id;
+
+                int cantidadViajes = Convert.ToInt32(commandViajes.ExecuteScalar());
+
+                if (cantidadViajes > 0)
+                {
+                    return BadRequest(ApiRespuesta<object>.Error(
+                        "No se puede eliminar la ruta porque tiene viajes registrados."
+                    ));
+                }
+
+                string queryEliminar = @"
+                    DELETE FROM Rutas
+                    WHERE Id = @Id";
+
+                using SqlCommand commandEliminar = new SqlCommand(queryEliminar, connection);
+                commandEliminar.Parameters.Add("@Id", SqlDbType.Int).Value = id;
+
+                int filas = commandEliminar.ExecuteNonQuery();
+
+                if (filas == 0)
+                {
+                    return NotFound(ApiRespuesta<object>.Error("No se encontró la ruta que intenta eliminar."));
+                }
 
                 return Ok(ApiRespuesta<object>.Ok(new { }, "Ruta eliminada correctamente."));
             }
+            catch (SqlException ex) when (ex.Number == 547)
+            {
+                return BadRequest(ApiRespuesta<object>.Error(
+                    "No se puede eliminar la ruta porque está relacionada con otros registros del sistema."
+                ));
+            }
             catch
             {
-                return StatusCode(500,
-                    ApiRespuesta<object>.Error("No se pudo eliminar la ruta."));
+                return StatusCode(500, ApiRespuesta<object>.Error("No se pudo eliminar la ruta."));
             }
         }
 

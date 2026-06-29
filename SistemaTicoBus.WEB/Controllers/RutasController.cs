@@ -24,6 +24,11 @@ namespace SistemaTicoBus.WEB.Controllers
                 return RedirectToAction("Login", "Account");
             }
 
+            if (UsuarioEsAdministrador())
+            {
+                return RedirectToAction("AdminDashboard", "Account", new { buscar });
+            }
+
             return RedirectToAction(nameof(ListadoRutas), new { buscar });
         }
 
@@ -33,6 +38,11 @@ namespace SistemaTicoBus.WEB.Controllers
             if (!UsuarioPuedeAcceder())
             {
                 return RedirectToAction("Login", "Account");
+            }
+
+            if (UsuarioEsAdministrador())
+            {
+                return RedirectToAction("AdminDashboard", "Account", new { buscar });
             }
 
             ApiResultado<List<Ruta>> resultado = await _apiClient.ObtenerRutasAsync(buscar);
@@ -220,7 +230,7 @@ namespace SistemaTicoBus.WEB.Controllers
                 TempData["MensajeExito"] = resultado.Mensaje;
             }
 
-            return RedirectToAction("AdminDashboard", "Account");
+            return RedireccionarDespuesDeGuardar();
         }
 
         private bool UsuarioPuedeAcceder()
