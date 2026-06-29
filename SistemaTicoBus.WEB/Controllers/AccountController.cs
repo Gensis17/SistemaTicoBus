@@ -136,7 +136,7 @@ namespace SistemaTicoBus.WEB.Controllers
         }
 
         [HttpGet]
-        public IActionResult AdminDashboard(string? buscar)
+        public async Task<IActionResult> AdminDashboard(string? buscar)
         {
             if (!UsuarioTieneRol(RolAdministrador))
             {
@@ -151,33 +151,29 @@ namespace SistemaTicoBus.WEB.Controllers
                 NombreCompleto = nombre,
                 Identificacion = "ADM-001",
                 Rol = RolAdministrador,
-                Rutas = new List<SistemaTicoBus.MODEL.Entidades.Ruta>(),
-                Unidades = new List<SistemaTicoBus.MODEL.Entidades.Unidad>()
+                Rutas = new List<Ruta>(),
+                Unidades = new List<Unidad>()
             };
 
-            try
+            ApiResultado<List<Ruta>> resultadoRutas = await _apiClient.ObtenerRutasAsync(buscar);
+            ApiResultado<List<Unidad>> resultadoUnidades = await _apiClient.ObtenerUnidadesAsync();
+
+            if (resultadoRutas.Exito && resultadoRutas.Datos != null)
             {
-                var queryRutas = _context.Rutas.AsQueryable();
-
-                if (!string.IsNullOrWhiteSpace(buscar))
-                {
-                    string textoBusqueda = buscar.ToLower().Trim();
-
-                    queryRutas = queryRutas.Where(r =>
-                        r.Origen.ToLower().Contains(textoBusqueda) ||
-                        r.Destino.ToLower().Contains(textoBusqueda) ||
-                        r.Nombre.ToLower().Contains(textoBusqueda)
-                    );
-                }
-
-                model.Rutas = queryRutas.ToList();
-
-                UnidadBL unidadBL = new UnidadBL();
-                model.Unidades = unidadBL.Listar();
+                model.Rutas = resultadoRutas.Datos;
             }
-            catch
+            else
             {
-                TempData["MensajeError"] = "No se pudieron cargar rutas o unidades. Revise la conexión a la base de datos.";
+                TempData["MensajeError"] = resultadoRutas.Mensaje;
+            }
+
+            if (resultadoUnidades.Exito && resultadoUnidades.Datos != null)
+            {
+                model.Unidades = resultadoUnidades.Datos;
+            }
+            else
+            {
+                TempData["MensajeError"] = resultadoUnidades.Mensaje;
             }
 
             return View(model);
@@ -203,6 +199,12 @@ namespace SistemaTicoBus.WEB.Controllers
             if (!TimeSpan.TryParse(DuracionEstimada, out TimeSpan duracion))
             {
                 TempData["MensajeError"] = "La duración estimada debe tener formato HH:mm.";
+                return RedirectToAction(nameof(AdminDashboard));
+            }
+
+            if (PrecioBase <= 0)
+            {
+                TempData["MensajeError"] = "El precio base debe ser mayor que cero.";
                 return RedirectToAction(nameof(AdminDashboard));
             }
 

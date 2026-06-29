@@ -69,7 +69,13 @@
                         </div>
                         <div class="col-6">
                             <label class="form-label">Precio Base</label>
-                            <input type="number" step="0.01" name="precioBase" id="inputPrecio" class="form-control" required />
+                            <input type="number"
+                                   step="0.01"
+                                   min="0.01"
+                                   name="precioBase"
+                                   id="inputPrecio"
+                                   class="form-control"
+                                   required />
                         </div>
                     </div>
                     <button type="submit" id="btnSubmit" class="btn btn-primario w-100">Registrar Ruta</button>
@@ -101,8 +107,7 @@
                             {
                                 <tr>
                                     <td class="py-3">
-                                        <span class="fw-bold text-dark">RT-0@ruta.Id</span><br />
-                                        <small class="text-muted">@ruta.Nombre</small>
+                                        <span class="fw-bold text-dark">@ruta.Nombre</span>
                                     </td>
                                     <td class="text-secondary">@ruta.Origen</td>
                                     <td class="text-secondary">@ruta.Destino</td>
