@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using SistemaTicoBus.BL;
 using SistemaTicoBus.MODEL.Entidades;
 using SistemaTicoBus.WEB.Services.Api;
 
@@ -8,6 +7,7 @@ namespace SistemaTicoBus.WEB.Controllers
     public class ViajeCanceladoController : Controller
     {
         private const string RolAdministrador = "Administrador";
+        private const string RolChofer = "Chofer";
 
         private readonly ITicoBusApiClient _apiClient;
 
@@ -16,9 +16,10 @@ namespace SistemaTicoBus.WEB.Controllers
             _apiClient = apiClient;
         }
 
+        [HttpGet]
         public async Task<IActionResult> Index()
         {
-            if (!UsuarioEsAdministrador())
+            if (!UsuarioPuedeAcceder())
             {
                 return RedirectToAction("Login", "Account");
             }
@@ -34,9 +35,10 @@ namespace SistemaTicoBus.WEB.Controllers
             return View(resultado.Datos);
         }
 
+        [HttpGet]
         public async Task<IActionResult> Detalle(int id)
         {
-            if (!UsuarioEsAdministrador())
+            if (!UsuarioPuedeAcceder())
             {
                 return RedirectToAction("Login", "Account");
             }
@@ -45,16 +47,17 @@ namespace SistemaTicoBus.WEB.Controllers
 
             if (!resultado.Exito || resultado.Datos == null)
             {
-                return NotFound();
+                TempData["MensajeError"] = resultado.Mensaje;
+                return RedirectToAction(nameof(Index));
             }
 
             return View(resultado.Datos);
         }
 
-        private bool UsuarioEsAdministrador()
+        private bool UsuarioPuedeAcceder()
         {
             string? rol = HttpContext.Session.GetString("Rol");
-            return rol == RolAdministrador;
+            return rol == RolAdministrador || rol == RolChofer;
         }
     }
 }

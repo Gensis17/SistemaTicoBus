@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using SistemaTicoBus.BL;
 using SistemaTicoBus.MODEL.Entidades;
 using SistemaTicoBus.WEB.Services.Api;
 
@@ -8,6 +7,7 @@ namespace SistemaTicoBus.WEB.Controllers
     public class UnidadController : Controller
     {
         private const string RolAdministrador = "Administrador";
+        private const string RolChofer = "Chofer";
 
         private readonly ITicoBusApiClient _apiClient;
 
@@ -16,9 +16,10 @@ namespace SistemaTicoBus.WEB.Controllers
             _apiClient = apiClient;
         }
 
+        [HttpGet]
         public async Task<IActionResult> Index()
         {
-            if (!UsuarioEsAdministrador())
+            if (!UsuarioPuedeAcceder())
             {
                 return RedirectToAction("Login", "Account");
             }
@@ -38,7 +39,7 @@ namespace SistemaTicoBus.WEB.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Crear(Unidad model)
         {
-            if (!UsuarioEsAdministrador())
+            if (!UsuarioPuedeAcceder())
             {
                 return RedirectToAction("Login", "Account");
             }
@@ -63,12 +64,19 @@ namespace SistemaTicoBus.WEB.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Editar(Unidad model, string placaOriginal)
         {
-            if (!UsuarioEsAdministrador())
+            if (!UsuarioPuedeAcceder())
             {
                 return RedirectToAction("Login", "Account");
             }
 
             NormalizarUnidad(model);
+            placaOriginal = placaOriginal?.Trim() ?? string.Empty;
+
+            if (string.IsNullOrWhiteSpace(placaOriginal))
+            {
+                TempData["MensajeError"] = "No se recibió la placa original de la unidad.";
+                return RedirectToAction(nameof(Index));
+            }
 
             ApiResultado<Unidad> resultado = await _apiClient.EditarUnidadAsync(placaOriginal, model);
 
@@ -84,10 +92,10 @@ namespace SistemaTicoBus.WEB.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        private bool UsuarioEsAdministrador()
+        private bool UsuarioPuedeAcceder()
         {
             string? rol = HttpContext.Session.GetString("Rol");
-            return rol == RolAdministrador;
+            return rol == RolAdministrador || rol == RolChofer;
         }
 
         private void NormalizarUnidad(Unidad model)

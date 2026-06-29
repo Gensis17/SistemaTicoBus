@@ -1,13 +1,13 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using SistemaTicoBus.DA.Repositorios;
 using SistemaTicoBus.MODEL.Entidades;
 using SistemaTicoBus.WEB.Services.Api;
+using System.Text.RegularExpressions;
 
 namespace SistemaTicoBus.WEB.Controllers
 {
     public class PasajerosController : Controller
     {
-        private const string RolAdministrador = "Administrador";
+        private const string RolChofer = "Chofer";
 
         private readonly ITicoBusApiClient _apiClient;
 
@@ -16,9 +16,10 @@ namespace SistemaTicoBus.WEB.Controllers
             _apiClient = apiClient;
         }
 
-        public async Task<IActionResult> ListadoPasajeros(string buscarNombre, string identificacionEditar)
+        [HttpGet]
+        public async Task<IActionResult> ListadoPasajeros(string? buscarNombre, string? identificacionEditar)
         {
-            if (!UsuarioEsAdministrador())
+            if (!UsuarioEsChofer())
             {
                 return RedirectToAction("Login", "Account");
             }
@@ -27,7 +28,7 @@ namespace SistemaTicoBus.WEB.Controllers
 
             if (!resultado.Exito || resultado.Datos == null)
             {
-                TempData["MensajeError"] = resultado.Mensaje;
+                TempData["MensajeError"] = ObtenerMensajeSeguro(resultado.Mensaje, "No se pudieron cargar los pasajeros.");
                 ViewBag.Busqueda = buscarNombre;
                 return View(new List<Pasajero>());
             }
@@ -39,10 +40,17 @@ namespace SistemaTicoBus.WEB.Controllers
                 ApiResultado<Pasajero> pasajeroResultado =
                     await _apiClient.ObtenerPasajeroAsync(identificacionEditar);
 
-                if (pasajeroResultado.Exito)
+                if (pasajeroResultado.Exito && pasajeroResultado.Datos != null)
                 {
                     ViewBag.PasajeroEditar = pasajeroResultado.Datos;
                     ViewBag.IdOriginal = identificacionEditar;
+                }
+                else
+                {
+                    TempData["MensajeError"] = ObtenerMensajeSeguro(
+                        pasajeroResultado.Mensaje,
+                        "No se pudo cargar el pasajero seleccionado para editar."
+                    );
                 }
             }
 
@@ -53,7 +61,7 @@ namespace SistemaTicoBus.WEB.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> RegistrarPasajeroGuardar(Pasajero model)
         {
-            if (!UsuarioEsAdministrador())
+            if (!UsuarioEsChofer())
             {
                 return RedirectToAction("Login", "Account");
             }
@@ -64,11 +72,17 @@ namespace SistemaTicoBus.WEB.Controllers
 
             if (!resultado.Exito)
             {
-                TempData["MensajeError"] = resultado.Mensaje;
+                TempData["MensajeError"] = ObtenerMensajeSeguro(
+                    resultado.Mensaje,
+                    "No se pudo registrar el pasajero. Verifique los datos ingresados."
+                );
             }
             else
             {
-                TempData["MensajeExito"] = resultado.Mensaje;
+                TempData["MensajeExito"] = ObtenerMensajeSeguro(
+                    resultado.Mensaje,
+                    "Pasajero registrado correctamente."
+                );
             }
 
             return RedirectToAction(nameof(ListadoPasajeros));
@@ -78,11 +92,12 @@ namespace SistemaTicoBus.WEB.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> EditarPasajeroGuardar(Pasajero model, string idOriginal)
         {
-            if (!UsuarioEsAdministrador())
+            if (!UsuarioEsChofer())
             {
                 return RedirectToAction("Login", "Account");
             }
 
+            idOriginal = idOriginal?.Trim() ?? string.Empty;
             NormalizarPasajero(model);
 
             if (string.IsNullOrWhiteSpace(idOriginal))
@@ -95,28 +110,51 @@ namespace SistemaTicoBus.WEB.Controllers
 
             if (!resultado.Exito)
             {
-                TempData["MensajeError"] = resultado.Mensaje;
+                TempData["MensajeError"] = ObtenerMensajeSeguro(
+                    resultado.Mensaje,
+                    "No se pudo actualizar el pasajero. Verifique los datos ingresados."
+                );
+
+                return RedirectToAction(nameof(ListadoPasajeros), new { identificacionEditar = idOriginal });
             }
-            else
-            {
-                TempData["MensajeExito"] = resultado.Mensaje;
-            }
+
+            TempData["MensajeExito"] = ObtenerMensajeSeguro(
+                resultado.Mensaje,
+                "Pasajero actualizado correctamente."
+            );
 
             return RedirectToAction(nameof(ListadoPasajeros));
         }
 
-        private bool UsuarioEsAdministrador()
+        private bool UsuarioEsChofer()
         {
-            string? rol = HttpContext.Session.GetString("Rol");
-            return rol == RolAdministrador;
+            string rol = (HttpContext.Session.GetString("Rol") ?? string.Empty).Trim();
+
+            return string.Equals(rol, RolChofer, StringComparison.OrdinalIgnoreCase);
         }
 
         private void NormalizarPasajero(Pasajero model)
         {
-            model.Identificacion = model.Identificacion?.Trim() ?? string.Empty;
-            model.Nombre = model.Nombre?.Trim() ?? string.Empty;
-            model.Apellidos = model.Apellidos?.Trim() ?? string.Empty;
-            model.Correo = model.Correo?.Trim() ?? string.Empty;
+            model.Identificacion = NormalizarTexto(model.Identificacion);
+            model.Nombre = NormalizarTexto(model.Nombre);
+            model.Apellidos = NormalizarTexto(model.Apellidos);
+            model.Correo = NormalizarTexto(model.Correo).ToLowerInvariant();
+            model.Clave = string.IsNullOrWhiteSpace(model.Clave) ? "Pasa123*" : model.Clave.Trim();
+            model.Rol = "Pasajero";
+        }
+
+        private string NormalizarTexto(string? texto)
+        {
+            texto = texto?.Trim() ?? string.Empty;
+            texto = Regex.Replace(texto, @"\s+", " ");
+            return texto;
+        }
+
+        private string ObtenerMensajeSeguro(string? mensajeApi, string mensajeRespaldo)
+        {
+            return string.IsNullOrWhiteSpace(mensajeApi)
+                ? mensajeRespaldo
+                : mensajeApi.Trim();
         }
     }
 }

@@ -6,6 +6,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Data;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace SistemaTicoBus.API.Controllers
 {
@@ -25,7 +26,6 @@ namespace SistemaTicoBus.API.Controllers
         [HttpGet]
         public ActionResult<ApiRespuesta<List<ChoferDto>>> Listar([FromQuery] string? busqueda)
         {
-            // Listar choferes ahora se hace desde API, no desde el controller MVC.
             try
             {
                 return Ok(ApiRespuesta<List<ChoferDto>>.Ok(ObtenerChoferes(busqueda)));
@@ -44,23 +44,23 @@ namespace SistemaTicoBus.API.Controllers
         {
             NormalizarChofer(solicitud);
 
-            if (!ModelState.IsValid)
+            string? mensajeValidacion = ValidarChoferCrear(solicitud);
+
+            if (!string.IsNullOrWhiteSpace(mensajeValidacion))
             {
-                return BadRequest(ApiRespuesta<ChoferDto>.Error(
-                    "Verifique los datos del chofer. Todos los campos son requeridos y el correo debe ser válido."
-                ));
+                return BadRequest(ApiRespuesta<ChoferDto>.Error(mensajeValidacion));
             }
 
             try
             {
                 if (ExisteChofer(solicitud.Identificacion))
                 {
-                    return BadRequest(ApiRespuesta<ChoferDto>.Error("Ya existe un chofer con esa identificación."));
+                    return BadRequest(ApiRespuesta<ChoferDto>.Error("Ya existe un chofer con esa cédula."));
                 }
 
                 if (ExisteCorreo(solicitud.Correo))
                 {
-                    return BadRequest(ApiRespuesta<ChoferDto>.Error("Ya existe un usuario registrado con ese correo."));
+                    return BadRequest(ApiRespuesta<ChoferDto>.Error("Ya existe un usuario registrado con ese correo electrónico."));
                 }
 
                 string nombreUsuario = GenerarNombreUsuario(solicitud.Nombre, solicitud.Apellidos);
@@ -74,7 +74,7 @@ namespace SistemaTicoBus.API.Controllers
                     claveGenerada
                 );
 
-                var dto = new ChoferDto
+                ChoferDto dto = new ChoferDto
                 {
                     Identificacion = solicitud.Identificacion,
                     Nombre = solicitud.Nombre,
@@ -84,8 +84,8 @@ namespace SistemaTicoBus.API.Controllers
                 };
 
                 string mensaje = correoEnviado
-                    ? "Chofer registrado correctamente. La clave temporal fue enviada por Mailtrap."
-                    : "Chofer registrado correctamente, pero no se pudo enviar el correo por Mailtrap.";
+                    ? "Chofer registrado correctamente. La clave temporal fue enviada al correo indicado."
+                    : "Chofer registrado correctamente, pero no se pudo enviar el correo con la clave temporal.";
 
                 return Ok(ApiRespuesta<ChoferDto>.Ok(dto, mensaje));
             }
@@ -110,14 +110,14 @@ namespace SistemaTicoBus.API.Controllers
 
             if (string.IsNullOrWhiteSpace(identificacionActual))
             {
-                return BadRequest(ApiRespuesta<ChoferDto>.Error("No se recibió la identificación actual del chofer."));
+                return BadRequest(ApiRespuesta<ChoferDto>.Error("No se recibió la cédula actual del chofer."));
             }
 
-            if (!ModelState.IsValid)
+            string? mensajeValidacion = ValidarChoferEditar(solicitud);
+
+            if (!string.IsNullOrWhiteSpace(mensajeValidacion))
             {
-                return BadRequest(ApiRespuesta<ChoferDto>.Error(
-                    "Verifique los datos del chofer. Identificación, nombre y apellidos son requeridos."
-                ));
+                return BadRequest(ApiRespuesta<ChoferDto>.Error(mensajeValidacion));
             }
 
             try
@@ -131,12 +131,12 @@ namespace SistemaTicoBus.API.Controllers
 
                 if (ExisteOtraIdentificacion(identificacionActual, solicitud.Identificacion))
                 {
-                    return BadRequest(ApiRespuesta<ChoferDto>.Error("Ya existe otro chofer con esa identificación."));
+                    return BadRequest(ApiRespuesta<ChoferDto>.Error("Ya existe otro chofer con esa cédula."));
                 }
 
                 ActualizarChofer(identificacionActual, solicitud);
 
-                var dto = new ChoferDto
+                ChoferDto dto = new ChoferDto
                 {
                     Identificacion = solicitud.Identificacion,
                     Nombre = solicitud.Nombre,
@@ -163,12 +163,11 @@ namespace SistemaTicoBus.API.Controllers
         [HttpDelete("{identificacion}")]
         public ActionResult<ApiRespuesta<object>> Eliminar(string identificacion)
         {
-            // No lo pide la segunda entrega para módulo 2, pero se deja protegido por API Key porque la vista lo usa.
             identificacion = identificacion?.Trim() ?? string.Empty;
 
             if (string.IsNullOrWhiteSpace(identificacion))
             {
-                return BadRequest(ApiRespuesta<object>.Error("No se recibió la identificación del chofer."));
+                return BadRequest(ApiRespuesta<object>.Error("No se recibió la cédula del chofer."));
             }
 
             try
@@ -401,11 +400,11 @@ namespace SistemaTicoBus.API.Controllers
             connection.Open();
 
             using SqlCommand command = new SqlCommand(
-                "SELECT COUNT(*) FROM Usuarios WHERE Correo = @Correo",
+                "SELECT COUNT(*) FROM Usuarios WHERE LOWER(LTRIM(RTRIM(Correo))) = LOWER(@Correo)",
                 connection
             );
 
-            command.Parameters.Add("@Correo", SqlDbType.VarChar, 100).Value = correo;
+            command.Parameters.Add("@Correo", SqlDbType.VarChar, 100).Value = correo.Trim();
             return Convert.ToInt32(command.ExecuteScalar()) > 0;
         }
 
@@ -533,7 +532,7 @@ namespace SistemaTicoBus.API.Controllers
             string primerNombre = ObtenerPrimeraPalabra(nombre);
             string primerApellido = ObtenerPrimeraPalabra(apellidos);
 
-            string nombreBase = $"chofer.{primerNombre}.{primerApellido}".ToLower();
+            string nombreBase = $"chofer.{primerNombre}.{primerApellido}".ToLowerInvariant();
             nombreBase = LimpiarTextoUsuario(nombreBase);
 
             string nombreUsuario = nombreBase;
@@ -589,27 +588,128 @@ namespace SistemaTicoBus.API.Controllers
                 .Replace("ó", "o")
                 .Replace("ú", "u")
                 .Replace("ñ", "n")
+                .Replace("ü", "u")
                 .Replace("Á", "a")
                 .Replace("É", "e")
                 .Replace("Í", "i")
                 .Replace("Ó", "o")
                 .Replace("Ú", "u")
-                .Replace("Ñ", "n");
+                .Replace("Ñ", "n")
+                .Replace("Ü", "u");
         }
 
         private void NormalizarChofer(ChoferCrearSolicitud solicitud)
         {
-            solicitud.Identificacion = solicitud.Identificacion?.Trim() ?? string.Empty;
-            solicitud.Nombre = solicitud.Nombre?.Trim() ?? string.Empty;
-            solicitud.Apellidos = solicitud.Apellidos?.Trim() ?? string.Empty;
-            solicitud.Correo = solicitud.Correo?.Trim() ?? string.Empty;
+            solicitud.Identificacion = NormalizarTexto(solicitud.Identificacion);
+            solicitud.Nombre = NormalizarTexto(solicitud.Nombre);
+            solicitud.Apellidos = NormalizarTexto(solicitud.Apellidos);
+            solicitud.Correo = NormalizarTexto(solicitud.Correo).ToLowerInvariant();
         }
 
         private void NormalizarChofer(ChoferEditarSolicitud solicitud)
         {
-            solicitud.Identificacion = solicitud.Identificacion?.Trim() ?? string.Empty;
-            solicitud.Nombre = solicitud.Nombre?.Trim() ?? string.Empty;
-            solicitud.Apellidos = solicitud.Apellidos?.Trim() ?? string.Empty;
+            solicitud.Identificacion = NormalizarTexto(solicitud.Identificacion);
+            solicitud.Nombre = NormalizarTexto(solicitud.Nombre);
+            solicitud.Apellidos = NormalizarTexto(solicitud.Apellidos);
+        }
+
+        private string NormalizarTexto(string? texto)
+        {
+            texto = texto?.Trim() ?? string.Empty;
+            texto = Regex.Replace(texto, @"\s+", " ");
+            return texto;
+        }
+
+        private string? ValidarChoferCrear(ChoferCrearSolicitud solicitud)
+        {
+            string? mensaje = ValidarDatosBasicosChofer(
+                solicitud.Identificacion,
+                solicitud.Nombre,
+                solicitud.Apellidos
+            );
+
+            if (!string.IsNullOrWhiteSpace(mensaje))
+            {
+                return mensaje;
+            }
+
+            if (string.IsNullOrWhiteSpace(solicitud.Correo))
+            {
+                return "El correo electrónico es requerido.";
+            }
+
+            if (solicitud.Correo.Length > 100)
+            {
+                return "El correo electrónico no puede superar los 100 caracteres.";
+            }
+
+            EmailAddressAttribute validadorCorreo = new EmailAddressAttribute();
+
+            if (!validadorCorreo.IsValid(solicitud.Correo))
+            {
+                return "Ingrese un correo electrónico válido.";
+            }
+
+            return null;
+        }
+
+        private string? ValidarChoferEditar(ChoferEditarSolicitud solicitud)
+        {
+            return ValidarDatosBasicosChofer(
+                solicitud.Identificacion,
+                solicitud.Nombre,
+                solicitud.Apellidos
+            );
+        }
+
+        private string? ValidarDatosBasicosChofer(string identificacion, string nombre, string apellidos)
+        {
+            if (string.IsNullOrWhiteSpace(identificacion))
+            {
+                return "La cédula es requerida.";
+            }
+
+            if (!Regex.IsMatch(identificacion, @"^\d+$"))
+            {
+                return "La cédula solo puede contener números. No use letras, espacios ni guiones.";
+            }
+
+            if (identificacion.Length < 6 || identificacion.Length > 20)
+            {
+                return "La cédula debe tener entre 6 y 20 números.";
+            }
+
+            if (string.IsNullOrWhiteSpace(nombre))
+            {
+                return "El nombre es requerido.";
+            }
+
+            if (!Regex.IsMatch(nombre, @"^[A-Za-zÁÉÍÓÚáéíóúÑñÜü]+(?: [A-Za-zÁÉÍÓÚáéíóúÑñÜü]+)*$"))
+            {
+                return "El nombre solo puede contener letras y espacios.";
+            }
+
+            if (nombre.Length < 2 || nombre.Length > 50)
+            {
+                return "El nombre debe tener entre 2 y 50 caracteres.";
+            }
+
+            if (string.IsNullOrWhiteSpace(apellidos))
+            {
+                return "Los apellidos son requeridos.";
+            }
+
+            if (!Regex.IsMatch(apellidos, @"^[A-Za-zÁÉÍÓÚáéíóúÑñÜü]+(?: [A-Za-zÁÉÍÓÚáéíóúÑñÜü]+)*$"))
+            {
+                return "Los apellidos solo pueden contener letras y espacios.";
+            }
+
+            if (apellidos.Length < 2 || apellidos.Length > 50)
+            {
+                return "Los apellidos deben tener entre 2 y 50 caracteres.";
+            }
+
+            return null;
         }
 
         private string ObtenerMensajeSqlChofer(SqlException ex)
@@ -618,16 +718,16 @@ namespace SistemaTicoBus.API.Controllers
             {
                 if (error.Number == 2627 || error.Number == 2601)
                 {
-                    string mensaje = error.Message.ToLower();
+                    string mensaje = error.Message.ToLowerInvariant();
 
                     if (mensaje.Contains("choferes") || mensaje.Contains("identificacion"))
                     {
-                        return "Ya existe un chofer con esa identificación.";
+                        return "Ya existe un chofer con esa cédula.";
                     }
 
                     if (mensaje.Contains("correo"))
                     {
-                        return "Ya existe un usuario registrado con ese correo.";
+                        return "Ya existe un usuario registrado con ese correo electrónico.";
                     }
 
                     if (mensaje.Contains("nombreusuario"))
@@ -635,7 +735,7 @@ namespace SistemaTicoBus.API.Controllers
                         return "Ya existe un usuario con el nombre generado. Intente con otro nombre o apellido.";
                     }
 
-                    return "Ya existe un registro con esos datos. Verifique la identificación, usuario o correo.";
+                    return "Ya existe un registro con esos datos. Verifique la cédula, el usuario o el correo.";
                 }
 
                 if (error.Number == 547)
@@ -659,40 +759,16 @@ namespace SistemaTicoBus.API.Controllers
 
     public class ChoferCrearSolicitud
     {
-        [Required(ErrorMessage = "La identificación es requerida.")]
-        [StringLength(30)]
         public string Identificacion { get; set; } = string.Empty;
-
-        [Required(ErrorMessage = "El nombre es requerido.")]
-        [StringLength(50)]
-        [RegularExpression(@"^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$")]
         public string Nombre { get; set; } = string.Empty;
-
-        [Required(ErrorMessage = "Los apellidos son requeridos.")]
-        [StringLength(50)]
-        [RegularExpression(@"^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$")]
         public string Apellidos { get; set; } = string.Empty;
-
-        [Required(ErrorMessage = "El correo es requerido.")]
-        [EmailAddress]
-        [StringLength(100)]
         public string Correo { get; set; } = string.Empty;
     }
 
     public class ChoferEditarSolicitud
     {
-        [Required(ErrorMessage = "La identificación es requerida.")]
-        [StringLength(30)]
         public string Identificacion { get; set; } = string.Empty;
-
-        [Required(ErrorMessage = "El nombre es requerido.")]
-        [StringLength(50)]
-        [RegularExpression(@"^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$")]
         public string Nombre { get; set; } = string.Empty;
-
-        [Required(ErrorMessage = "Los apellidos son requeridos.")]
-        [StringLength(50)]
-        [RegularExpression(@"^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$")]
         public string Apellidos { get; set; } = string.Empty;
     }
 }

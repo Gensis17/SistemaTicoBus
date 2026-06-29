@@ -1,4 +1,5 @@
 ﻿@model IEnumerable<SistemaTicoBus.WEB.Models.ChoferViewModel>
+@using System.Text.Json
 
 @{
     Layout = "~/Views/Shared/_LayoutDashboard.cshtml";
@@ -6,19 +7,19 @@
     ViewData["Seccion"] = "Choferes";
 }
 
-<!-- ENCABEZADO -->
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
         <small class="text-muted text-uppercase fw-semibold">Administración / Personal</small>
         <h1 class="fw-bold text-dark mb-0">Gestión de Choferes</h1>
     </div>
+
     <button class="btn btn-primario d-flex align-items-center gap-2"
-            data-bs-toggle="modal" data-bs-target="#modalAgregarChofer">
+            data-bs-toggle="modal"
+            data-bs-target="#modalAgregarChofer">
         <i class="bi bi-plus-circle"></i> Registrar Chofer
     </button>
 </div>
 
-<!-- BUSCADOR -->
 <div class="dashboard-card mb-4">
     <form asp-controller="Choferes" asp-action="Index" method="get">
         <div class="row align-items-center g-2">
@@ -34,6 +35,7 @@
                            value="@ViewBag.Busqueda" />
                 </div>
             </div>
+
             <div class="col-md-2">
                 <button type="submit" class="btn btn-secundario w-100">Buscar</button>
             </div>
@@ -41,40 +43,57 @@
     </form>
 </div>
 
-<!-- TABLA DE CHOFERES -->
 <div class="dashboard-card">
     <h5 class="fw-bold text-dark mb-4">Listado de Choferes</h5>
+
     <div class="table-responsive">
         <table class="table tabla-dashboard align-middle mb-0">
             <thead>
                 <tr>
-                    <th class="border-0 py-3">Identificación</th>
+                    <th class="border-0 py-3">Cédula</th>
                     <th class="border-0 py-3">Nombre Completo</th>
                     <th class="border-0 py-3">Correo</th>
                     <th class="border-0 py-3">Usuario</th>
                     <th class="border-0 py-3 text-end">Acciones</th>
                 </tr>
             </thead>
+
             <tbody>
                 @if (Model != null && Model.Any())
                 {
                     foreach (var chofer in Model)
                     {
-                        <tr>
+                        <tr data-identificacion="@chofer.Identificacion"
+                            data-correo="@chofer.Correo">
                             <td class="fw-bold">@chofer.Identificacion</td>
                             <td>@chofer.Nombre @chofer.Apellidos</td>
                             <td>@chofer.Correo</td>
-                            <td><span class="text-muted">@chofer.NombreUsuario</span></td>
+                            <td>
+                                <span class="text-muted">@chofer.NombreUsuario</span>
+                            </td>
                             <td class="text-end">
                                 <button type="button"
                                         class="btn btn-sm btn-outline-warning border-0"
                                         title="Editar"
-                                        onclick="prepararEdicion('@chofer.Identificacion', '@chofer.Nombre', '@chofer.Apellidos', '@chofer.Correo')">
+                                        onclick="prepararEdicion(
+                                            @Html.Raw(JsonSerializer.Serialize(chofer.Identificacion)),
+                                            @Html.Raw(JsonSerializer.Serialize(chofer.Nombre)),
+                                            @Html.Raw(JsonSerializer.Serialize(chofer.Apellidos)),
+                                            @Html.Raw(JsonSerializer.Serialize(chofer.Correo))
+                                        )">
                                     <i class="bi bi-pencil-square"></i>
                                 </button>
-                                <form asp-controller="Choferes" asp-action="Delete" method="post" class="d-inline">
+
+                                <form asp-controller="Choferes"
+                                      asp-action="Delete"
+                                      method="post"
+                                      class="d-inline">
                                     @Html.AntiForgeryToken()
-                                    <input type="hidden" name="id" value="@chofer.Identificacion" />
+
+                                    <input type="hidden"
+                                           name="id"
+                                           value="@chofer.Identificacion" />
+
                                     <button type="submit"
                                             class="btn btn-sm btn-outline-danger border-0"
                                             title="Eliminar"
@@ -99,7 +118,6 @@
     </div>
 </div>
 
-<!-- MODAL AGREGAR CHOFER -->
 <div class="modal fade" id="modalAgregarChofer" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content" style="border-radius: 1rem;">
@@ -107,28 +125,79 @@
                 <h5 class="modal-title fw-bold">Registrar Nuevo Chofer</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
+
             <div class="modal-body">
-                <form asp-controller="Choferes" asp-action="Create" method="post">
+                <div class="alert alert-danger d-none" data-form-error></div>
+
+                <form asp-controller="Choferes"
+                      asp-action="Create"
+                      method="post"
+                      class="formulario-chofer"
+                      data-modo="crear">
                     @Html.AntiForgeryToken()
+
                     <div class="mb-3">
-                        <label class="form-label">Identificación</label>
-                        <input type="text" name="Identificacion" class="form-control" placeholder="1-1111-1111" required />
+                        <label class="form-label">Cédula</label>
+                        <input type="text"
+                               name="Identificacion"
+                               class="form-control"
+                               placeholder="Ej: 111111111"
+                               required
+                               minlength="6"
+                               maxlength="20"
+                               pattern="[0-9]+"
+                               inputmode="numeric"
+                               data-solo-numeros="true"
+                               title="La cédula solo puede contener números. No use letras, espacios ni guiones." />
+                        <small class="text-muted">Solo números. No use letras, espacios ni guiones.</small>
                     </div>
+
                     <div class="mb-3">
                         <label class="form-label">Nombre</label>
-                        <input type="text" name="Nombre" class="form-control" placeholder="Nombre del chofer" required />
+                        <input type="text"
+                               name="Nombre"
+                               class="form-control"
+                               placeholder="Nombre del chofer"
+                               required
+                               minlength="2"
+                               maxlength="50"
+                               pattern="[A-Za-zÁÉÍÓÚáéíóúÑñÜü ]+"
+                               title="El nombre solo puede contener letras y espacios." />
                     </div>
+
                     <div class="mb-3">
                         <label class="form-label">Apellidos</label>
-                        <input type="text" name="Apellidos" class="form-control" placeholder="Apellidos del chofer" required />
+                        <input type="text"
+                               name="Apellidos"
+                               class="form-control"
+                               placeholder="Apellidos del chofer"
+                               required
+                               minlength="2"
+                               maxlength="50"
+                               pattern="[A-Za-zÁÉÍÓÚáéíóúÑñÜü ]+"
+                               title="Los apellidos solo pueden contener letras y espacios." />
                     </div>
+
                     <div class="mb-3">
                         <label class="form-label">Correo electrónico</label>
-                        <input type="email" name="Correo" class="form-control" placeholder="correo@ejemplo.com" required />
+                        <input type="email"
+                               name="Correo"
+                               class="form-control"
+                               placeholder="correo@ejemplo.com"
+                               required
+                               maxlength="100" />
                     </div>
+
                     <div class="d-flex justify-content-end gap-2 mt-4">
-                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
-                        <button type="submit" class="btn btn-primario">Guardar Chofer</button>
+                        <button type="button"
+                                class="btn btn-outline-secondary"
+                                data-bs-dismiss="modal">
+                            Cancelar
+                        </button>
+
+                        <button type="submit" class="btn btn-primario">
+                            Guardar Chofer
+                        </button>
                     </div>
                 </form>
             </div>
@@ -136,7 +205,6 @@
     </div>
 </div>
 
-<!-- MODAL EDITAR CHOFER -->
 <div class="modal fade" id="modalEditarChofer" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content" style="border-radius: 1rem;">
@@ -144,30 +212,81 @@
                 <h5 class="modal-title fw-bold">Editar Chofer</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
+
             <div class="modal-body">
-                <form id="formEditar" asp-controller="Choferes" asp-action="Edit" method="post">
+                <div class="alert alert-danger d-none" data-form-error></div>
+
+                <form id="formEditar"
+                      asp-controller="Choferes"
+                      asp-action="Edit"
+                      method="post"
+                      class="formulario-chofer"
+                      data-modo="editar">
                     @Html.AntiForgeryToken()
+
                     <input type="hidden" id="editIdOriginal" name="id" />
+
                     <div class="mb-3">
-                        <label class="form-label">Identificación</label>
-                        <input type="text" id="editIdentificacion" name="Identificacion" class="form-control" required />
+                        <label class="form-label">Cédula</label>
+                        <input type="text"
+                               id="editIdentificacion"
+                               name="Identificacion"
+                               class="form-control"
+                               required
+                               minlength="6"
+                               maxlength="20"
+                               pattern="[0-9]+"
+                               inputmode="numeric"
+                               data-solo-numeros="true"
+                               title="La cédula solo puede contener números. No use letras, espacios ni guiones." />
+                        <small class="text-muted">Solo números. No use letras, espacios ni guiones.</small>
                     </div>
+
                     <div class="mb-3">
                         <label class="form-label">Nombre</label>
-                        <input type="text" id="editNombre" name="Nombre" class="form-control" required />
+                        <input type="text"
+                               id="editNombre"
+                               name="Nombre"
+                               class="form-control"
+                               required
+                               minlength="2"
+                               maxlength="50"
+                               pattern="[A-Za-zÁÉÍÓÚáéíóúÑñÜü ]+"
+                               title="El nombre solo puede contener letras y espacios." />
                     </div>
+
                     <div class="mb-3">
                         <label class="form-label">Apellidos</label>
-                        <input type="text" id="editApellidos" name="Apellidos" class="form-control" required />
+                        <input type="text"
+                               id="editApellidos"
+                               name="Apellidos"
+                               class="form-control"
+                               required
+                               minlength="2"
+                               maxlength="50"
+                               pattern="[A-Za-zÁÉÍÓÚáéíóúÑñÜü ]+"
+                               title="Los apellidos solo pueden contener letras y espacios." />
                     </div>
+
                     <div class="mb-3">
                         <label class="form-label">Correo electrónico</label>
-                        <input type="email" id="editCorreo" class="form-control" disabled />
+                        <input type="email"
+                               id="editCorreo"
+                               class="form-control"
+                               disabled />
                         <small class="text-muted">El correo no se puede modificar.</small>
                     </div>
+
                     <div class="d-flex justify-content-end gap-2 mt-4">
-                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
-                        <button type="submit" class="btn btn-primario">Guardar Cambios</button>
+                        <button type="button"
+                                class="btn btn-outline-secondary"
+                                data-bs-dismiss="modal">
+                            Cancelar
+                        </button>
+
+                        <button type="submit" class="btn btn-primario">
+                            Guardar Cambios
+                        </button>
                     </div>
                 </form>
             </div>
@@ -183,7 +302,177 @@
             document.getElementById('editNombre').value = nombre;
             document.getElementById('editApellidos').value = apellidos;
             document.getElementById('editCorreo').value = correo;
+
+            limpiarMensajesFormulario(document.getElementById('formEditar'));
+
             new bootstrap.Modal(document.getElementById('modalEditarChofer')).show();
+        }
+
+        document.querySelectorAll('[data-solo-numeros="true"]').forEach(function (input) {
+            input.addEventListener('input', function () {
+                this.value = this.value.replace(/\D/g, '');
+            });
+        });
+
+        document.querySelectorAll('.formulario-chofer').forEach(function (formulario) {
+            formulario.addEventListener('submit', function (event) {
+                limpiarMensajesFormulario(formulario);
+
+                const mensaje = validarFormularioChofer(formulario);
+
+                if (mensaje) {
+                    event.preventDefault();
+                    mostrarMensajeFormulario(formulario, mensaje);
+                }
+            });
+        });
+
+        function validarFormularioChofer(formulario) {
+            const modo = formulario.dataset.modo;
+            const identificacion = obtenerValor(formulario, 'Identificacion');
+            const nombre = obtenerValor(formulario, 'Nombre');
+            const apellidos = obtenerValor(formulario, 'Apellidos');
+            const correo = obtenerValor(formulario, 'Correo');
+
+            const idOriginal = modo === 'editar'
+                ? document.getElementById('editIdOriginal').value.trim()
+                : '';
+
+            if (!identificacion) {
+                return 'La cédula es requerida.';
+            }
+
+            if (!/^\d+$/.test(identificacion)) {
+                return 'La cédula solo puede contener números. No use letras, espacios ni guiones.';
+            }
+
+            if (identificacion.length < 6 || identificacion.length > 20) {
+                return 'La cédula debe tener entre 6 y 20 números.';
+            }
+
+            if (existeIdentificacionEnTabla(identificacion, idOriginal)) {
+                return 'Ya existe un chofer con esa cédula.';
+            }
+
+            if (!nombre) {
+                return 'El nombre es requerido.';
+            }
+
+            if (!/^[A-Za-zÁÉÍÓÚáéíóúÑñÜü]+(?: [A-Za-zÁÉÍÓÚáéíóúÑñÜü]+)*$/.test(nombre)) {
+                return 'El nombre solo puede contener letras y espacios.';
+            }
+
+            if (nombre.length < 2 || nombre.length > 50) {
+                return 'El nombre debe tener entre 2 y 50 caracteres.';
+            }
+
+            if (!apellidos) {
+                return 'Los apellidos son requeridos.';
+            }
+
+            if (!/^[A-Za-zÁÉÍÓÚáéíóúÑñÜü]+(?: [A-Za-zÁÉÍÓÚáéíóúÑñÜü]+)*$/.test(apellidos)) {
+                return 'Los apellidos solo pueden contener letras y espacios.';
+            }
+
+            if (apellidos.length < 2 || apellidos.length > 50) {
+                return 'Los apellidos deben tener entre 2 y 50 caracteres.';
+            }
+
+            if (modo === 'crear') {
+                if (!correo) {
+                    return 'El correo electrónico es requerido.';
+                }
+
+                if (correo.length > 100) {
+                    return 'El correo electrónico no puede superar los 100 caracteres.';
+                }
+
+                if (!/^[^\s@@]+@@[^\s@@]+\.[^\s@@]+$/.test(correo)) {
+                    return 'Ingrese un correo electrónico válido.';
+                }
+
+                if (existeCorreoEnTabla(correo)) {
+                    return 'Ya existe un usuario registrado con ese correo electrónico.';
+                }
+            }
+
+            return null;
+        }
+
+        function obtenerValor(formulario, nombreCampo) {
+            const campo = formulario.querySelector('[name="' + nombreCampo + '"]');
+
+            if (!campo) {
+                return '';
+            }
+
+            return campo.value.trim().replace(/\s+/g, ' ');
+        }
+
+        function existeIdentificacionEnTabla(identificacion, idOriginal) {
+            const filas = document.querySelectorAll('tr[data-identificacion]');
+
+            for (const fila of filas) {
+                const identificacionExistente = (fila.dataset.identificacion || '').trim();
+
+                if (
+                    identificacionExistente === identificacion &&
+                    identificacionExistente !== idOriginal
+                ) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        function existeCorreoEnTabla(correo) {
+            const filas = document.querySelectorAll('tr[data-correo]');
+            const correoNormalizado = correo.trim().toLowerCase();
+
+            for (const fila of filas) {
+                const correoExistente = (fila.dataset.correo || '').trim().toLowerCase();
+
+                if (correoExistente === correoNormalizado) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        function mostrarMensajeFormulario(formulario, mensaje) {
+            const contenedorModal = formulario.closest('.modal-body');
+
+            if (!contenedorModal) {
+                alert(mensaje);
+                return;
+            }
+
+            const alerta = contenedorModal.querySelector('[data-form-error]');
+
+            if (!alerta) {
+                alert(mensaje);
+                return;
+            }
+
+            alerta.textContent = mensaje;
+            alerta.classList.remove('d-none');
+        }
+
+        function limpiarMensajesFormulario(formulario) {
+            const contenedorModal = formulario.closest('.modal-body');
+
+            if (!contenedorModal) {
+                return;
+            }
+
+            const alerta = contenedorModal.querySelector('[data-form-error]');
+
+            if (alerta) {
+                alerta.textContent = '';
+                alerta.classList.add('d-none');
+            }
         }
     </script>
 }

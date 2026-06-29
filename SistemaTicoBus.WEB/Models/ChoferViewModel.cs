@@ -4,18 +4,19 @@ namespace SistemaTicoBus.WEB.Models
 {
     public class ChoferViewModel
     {
-        [Required(ErrorMessage = "La identificación es requerida.")]
-        [StringLength(30, ErrorMessage = "La identificación no puede superar los 30 caracteres.")]
+        [Required(ErrorMessage = "La cédula es requerida.")]
+        [RegularExpression(@"^\d+$", ErrorMessage = "La cédula solo puede contener números. No use letras, espacios ni guiones.")]
+        [StringLength(20, MinimumLength = 6, ErrorMessage = "La cédula debe tener entre 6 y 20 números.")]
         public string Identificacion { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "El nombre es requerido.")]
-        [StringLength(50, ErrorMessage = "El nombre no puede superar los 50 caracteres.")]
-        [RegularExpression(@"^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$", ErrorMessage = "El nombre solo puede contener letras.")]
+        [RegularExpression(@"^[A-Za-zÁÉÍÓÚáéíóúÑñÜü ]+$", ErrorMessage = "El nombre solo puede contener letras y espacios.")]
+        [StringLength(50, MinimumLength = 2, ErrorMessage = "El nombre debe tener entre 2 y 50 caracteres.")]
         public string Nombre { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "Los apellidos son requeridos.")]
-        [StringLength(50, ErrorMessage = "Los apellidos no pueden superar los 50 caracteres.")]
-        [RegularExpression(@"^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$", ErrorMessage = "Los apellidos solo pueden contener letras.")]
+        [RegularExpression(@"^[A-Za-zÁÉÍÓÚáéíóúÑñÜü ]+$", ErrorMessage = "Los apellidos solo pueden contener letras y espacios.")]
+        [StringLength(50, MinimumLength = 2, ErrorMessage = "Los apellidos deben tener entre 2 y 50 caracteres.")]
         public string Apellidos { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "El correo electrónico es requerido.")]

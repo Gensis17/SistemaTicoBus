@@ -1,0 +1,153 @@
+﻿@model string?
+@using System
+@using Microsoft.AspNetCore.Http
+
+@{
+    string rol = (Context.Session.GetString("Rol") ?? string.Empty).Trim();
+    string seccion = !string.IsNullOrWhiteSpace(Model)
+        ? Model.Trim()
+        : (ViewData["Seccion"]?.ToString() ?? string.Empty).Trim();
+
+    bool esAdministrador = string.Equals(rol, "Administrador", StringComparison.OrdinalIgnoreCase);
+    bool esChofer = string.Equals(rol, "Chofer", StringComparison.OrdinalIgnoreCase);
+    bool esPasajero = string.Equals(rol, "Pasajero", StringComparison.OrdinalIgnoreCase);
+
+    string tituloSeccion = esAdministrador ? "Administración"
+        : esChofer ? "Operación"
+        : esPasajero ? "Pasajero"
+        : "Sistema";
+
+    string LinkClass(string clave)
+    {
+        return string.Equals(seccion, clave, StringComparison.OrdinalIgnoreCase)
+            ? "sidebar-link sidebar-link-active"
+            : "sidebar-link";
+    }
+
+    string IconClass(string clave)
+    {
+        return string.Equals(seccion, clave, StringComparison.OrdinalIgnoreCase)
+            ? "material-symbols-outlined sidebar-icon sidebar-icon-active"
+            : "material-symbols-outlined sidebar-icon";
+    }
+}
+
+<aside class="sidebar-ticobus">
+    <div>
+        <div class="sidebar-brand">
+            <div class="sidebar-brand-row">
+                <span class="material-symbols-outlined sidebar-brand-icon">navigation</span>
+                <h1 class="sidebar-brand-title">TicoBus</h1>
+            </div>
+            <div class="sidebar-brand-subtitle">Panel de Operador</div>
+        </div>
+
+        <div class="sidebar-section-title">@tituloSeccion</div>
+
+        <nav class="sidebar-nav">
+            @if (esAdministrador)
+            {
+                <a href="/Account/AdminDashboard" class="@LinkClass("AdminDashboard")">
+                    <span class="@IconClass("AdminDashboard")">dashboard</span>
+                    <span>Inicio</span>
+                </a>
+
+                <a href="/Choferes/Index" class="@LinkClass("Choferes")">
+                    <span class="@IconClass("Choferes")">badge</span>
+                    <span>Gestión de Choferes</span>
+                </a>
+
+                <a href="/Rutas/Index" class="@LinkClass("Rutas")">
+                    <span class="@IconClass("Rutas")">explore</span>
+                    <span>Catálogo de Rutas</span>
+                </a>
+
+                <a href="/Unidad/Index" class="@LinkClass("Unidades")">
+                    <span class="@IconClass("Unidades")">directions_bus</span>
+                    <span>Catálogo de Unidades</span>
+                </a>
+
+                <a href="/Viajes/Index" class="@LinkClass("Viajes")">
+                    <span class="@IconClass("Viajes")">calendar_month</span>
+                    <span>Gestión de Viajes</span>
+                </a>
+
+                <a href="/ViajesEnCurso/Index" class="@LinkClass("ViajesEnCurso")">
+                    <span class="@IconClass("ViajesEnCurso")">play_circle</span>
+                    <span>Viajes en Curso</span>
+                </a>
+
+                <a href="/ViajeCancelado/Index" class="@LinkClass("ViajesCancelados")">
+                    <span class="@IconClass("ViajesCancelados")">event_busy</span>
+                    <span>Viajes Cancelados</span>
+                </a>
+
+                <a href="/Account/ChangePassword" class="@LinkClass("CambiarClave")">
+                    <span class="@IconClass("CambiarClave")">lock_reset</span>
+                    <span>Cambiar clave</span>
+                </a>
+            }
+            else if (esChofer)
+            {
+                <a href="/Account/ChoferDashboard" class="@LinkClass("PerfilChofer")">
+                    <span class="@IconClass("PerfilChofer")">account_circle</span>
+                    <span>Mi Perfil</span>
+                </a>
+
+                <a href="/Pasajeros/ListadoPasajeros" class="@LinkClass("Pasajeros")">
+                    <span class="@IconClass("Pasajeros")">person_add</span>
+                    <span>Registrar Pasajero</span>
+                </a>
+
+                <a href="/Rutas/Index" class="@LinkClass("Rutas")">
+                    <span class="@IconClass("Rutas")">explore</span>
+                    <span>Catálogo de Rutas</span>
+                </a>
+
+                <a href="/Unidad/Index" class="@LinkClass("Unidades")">
+                    <span class="@IconClass("Unidades")">directions_bus</span>
+                    <span>Catálogo de Unidades</span>
+                </a>
+
+                <a href="/Viajes/Index" class="@LinkClass("Viajes")">
+                    <span class="@IconClass("Viajes")">calendar_month</span>
+                    <span>Gestión de Viajes</span>
+                </a>
+
+                <a href="/ViajesEnCurso/Index" class="@LinkClass("ViajesEnCurso")">
+                    <span class="@IconClass("ViajesEnCurso")">play_circle</span>
+                    <span>Viajes en Curso</span>
+                </a>
+
+                <a href="/ViajeCancelado/Index" class="@LinkClass("ViajesCancelados")">
+                    <span class="@IconClass("ViajesCancelados")">event_busy</span>
+                    <span>Viajes Cancelados</span>
+                </a>
+
+                <a href="/Account/ChangePassword" class="@LinkClass("CambiarClave")">
+                    <span class="@IconClass("CambiarClave")">lock_reset</span>
+                    <span>Cambiar clave</span>
+                </a>
+            }
+            else if (esPasajero)
+            {
+                <a href="/Account/PasajeroDashboard" class="@LinkClass("MisViajes")">
+                    <span class="@IconClass("MisViajes")">confirmation_number</span>
+                    <span>Mis Viajes</span>
+                </a>
+
+                <a href="/Account/ChangePassword" class="@LinkClass("CambiarClave")">
+                    <span class="@IconClass("CambiarClave")">lock_reset</span>
+                    <span>Cambiar clave</span>
+                </a>
+            }
+        </nav>
+    </div>
+
+    <div class="sidebar-logout-box">
+        <a href="/Account/Logout" class="sidebar-logout-link">
+            <span class="material-symbols-outlined">logout</span>
+            <span>Cerrar Sesión</span>
+        </a>
+    </div>
+</aside>
