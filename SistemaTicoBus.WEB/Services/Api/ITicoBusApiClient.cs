@@ -9,6 +9,7 @@ namespace SistemaTicoBus.WEB.Services.Api
         Task<ApiResultado<LoginApiDatos>> LoginAsync(LoginViewModel model);
         Task<ApiResultado<CambioClaveApiDatos>> CambiarClaveAsync(ChangePasswordViewModel model);
 
+        Task<ApiResultado<ChoferDashboardViewModel>> ObtenerDashboardChoferAsync(int usuarioId);
         Task<ApiResultado<List<ChoferViewModel>>> ObtenerChoferesAsync(string? busqueda);
         Task<ApiResultado<ChoferViewModel>> CrearChoferAsync(ChoferViewModel model);
         Task<ApiResultado<ChoferViewModel>> EditarChoferAsync(string identificacionActual, ChoferViewModel model);

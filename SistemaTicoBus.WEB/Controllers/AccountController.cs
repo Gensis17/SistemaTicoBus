@@ -1,14 +1,9 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.Data.SqlClient;
-using SistemaTicoBus.BL;
-using SistemaTicoBus.DA.Data;
-using SistemaTicoBus.DA.Repositorios;
 using SistemaTicoBus.MODEL.Entidades;
 using SistemaTicoBus.WEB.Models;
 using SistemaTicoBus.WEB.Services.Api;
-using System.Data;
-
 namespace SistemaTicoBus.WEB.Controllers
+
 {
     public class AccountController : Controller
     {
@@ -16,17 +11,10 @@ namespace SistemaTicoBus.WEB.Controllers
         private const string RolChofer = "Chofer";
         private const string RolPasajero = "Pasajero";
 
-        private readonly string _connectionString;
-        private readonly AppDbContext _context;
         private readonly ITicoBusApiClient _apiClient;
 
-        public AccountController(
-            IConfiguration configuration,
-            AppDbContext context,
-            ITicoBusApiClient apiClient)
+        public AccountController(ITicoBusApiClient apiClient)
         {
-            _connectionString = configuration.GetConnectionString("DefaultConnection") ?? string.Empty;
-            _context = context;
             _apiClient = apiClient;
         }
 
@@ -180,13 +168,14 @@ namespace SistemaTicoBus.WEB.Controllers
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> RegistrarRuta(string Origen, string Destino, string DuracionEstimada, decimal PrecioBase)
         {
             if (!UsuarioTieneRol(RolAdministrador))
             {
                 return RedirectToAction(nameof(Login));
             }
-
+            
             if (string.IsNullOrWhiteSpace(Origen) ||
                 string.IsNullOrWhiteSpace(Destino) ||
                 string.IsNullOrWhiteSpace(DuracionEstimada) ||
@@ -202,13 +191,7 @@ namespace SistemaTicoBus.WEB.Controllers
                 return RedirectToAction(nameof(AdminDashboard));
             }
 
-            if (PrecioBase <= 0)
-            {
-                TempData["MensajeError"] = "El precio base debe ser mayor que cero.";
-                return RedirectToAction(nameof(AdminDashboard));
-            }
-
-            var nuevaRuta = new SistemaTicoBus.MODEL.Entidades.Ruta
+            var nuevaRuta = new Ruta
             {
                 Nombre = $"Ruta {Origen.Trim()} - {Destino.Trim()}",
                 Origen = Origen.Trim(),
@@ -217,14 +200,19 @@ namespace SistemaTicoBus.WEB.Controllers
                 PrecioBase = PrecioBase
             };
 
-            _context.Rutas.Add(nuevaRuta);
-            await _context.SaveChangesAsync();
+            ApiResultado<Ruta> resultado = await _apiClient.CrearRutaAsync(nuevaRuta);
 
-            TempData["MensajeExito"] = "Ruta registrada correctamente.";
+            if (!resultado.Exito)
+            {
+                TempData["MensajeError"] = resultado.Mensaje;
+                return RedirectToAction(nameof(AdminDashboard));
+            }
+
+            TempData["MensajeExito"] = resultado.Mensaje;
             return RedirectToAction(nameof(AdminDashboard));
         }
 
-        public IActionResult ChoferDashboard()
+        public async Task<IActionResult> ChoferDashboard()
         {
             if (!UsuarioTieneRol(RolChofer))
             {
@@ -238,14 +226,12 @@ namespace SistemaTicoBus.WEB.Controllers
                 return RedirectToAction(nameof(Login));
             }
 
-            try
+            ApiResultado<ChoferDashboardViewModel> resultado =
+                await _apiClient.ObtenerDashboardChoferAsync(usuarioId.Value);
+
+            if (!resultado.Exito || resultado.Datos == null)
             {
-                ChoferDashboardViewModel model = ObtenerDatosDashboardChofer(usuarioId.Value);
-                return View(model);
-            }
-            catch (SqlException)
-            {
-                TempData["MensajeError"] = "No se pudieron cargar los viajes del chofer. Revise la conexión a la base de datos.";
+                TempData["MensajeError"] = resultado.Mensaje;
 
                 return View(new ChoferDashboardViewModel
                 {
@@ -255,7 +241,10 @@ namespace SistemaTicoBus.WEB.Controllers
                     Viajes = new List<ViajeAsignadoDTO>()
                 });
             }
+
+            return View(resultado.Datos);
         }
+
         public async Task<IActionResult> PasajeroDashboard(string tab = "viajes")
         {
             if (!UsuarioTieneRol(RolPasajero))
@@ -289,88 +278,5 @@ namespace SistemaTicoBus.WEB.Controllers
             return rolSesion == rolRequerido;
         }
 
-        private ChoferDashboardViewModel ObtenerDatosDashboardChofer(int usuarioId)
-        {
-            ChoferDashboardViewModel model = new ChoferDashboardViewModel
-            {
-                Identificacion = "No disponible",
-                NombreCompleto = "Chofer",
-                Rol = RolChofer,
-                Viajes = new List<ViajeAsignadoDTO>()
-            };
-
-            using SqlConnection connection = new SqlConnection(_connectionString);
-            connection.Open();
-
-            string choferQuery = @"
-                SELECT 
-                    Identificacion,
-                    Nombre,
-                    Apellidos
-                FROM Choferes
-                WHERE UsuarioId = @UsuarioId";
-
-            string identificacionChofer = string.Empty;
-
-            using (SqlCommand command = new SqlCommand(choferQuery, connection))
-            {
-                command.Parameters.Add("@UsuarioId", SqlDbType.Int).Value = usuarioId;
-
-                using SqlDataReader reader = command.ExecuteReader();
-
-                if (reader.Read())
-                {
-                    identificacionChofer = reader["Identificacion"].ToString() ?? string.Empty;
-                    model.Identificacion = identificacionChofer;
-                    model.NombreCompleto = $"{reader["Nombre"]} {reader["Apellidos"]}";
-                }
-            }
-
-            if (string.IsNullOrWhiteSpace(identificacionChofer))
-            {
-                return model;
-            }
-
-            string viajesQuery = @"
-                SELECT 
-                    v.NumeroViaje,
-                    r.Nombre AS Ruta,
-                    v.PlacaUnidad,
-                    v.FechaHoraSalida,
-                    v.Estado,
-                    u.CapacidadPasajeros,
-                    (
-                        SELECT COUNT(*) 
-                        FROM Reservas re 
-                        WHERE re.ViajeId = v.NumeroViaje
-                    ) AS AsientosOcupados
-                FROM Viajes v
-                INNER JOIN Rutas r ON v.RutaId = r.Id
-                INNER JOIN Unidades u ON v.PlacaUnidad = u.Placa
-                WHERE v.ChoferId = @ChoferId
-                ORDER BY v.FechaHoraSalida DESC";
-
-            using (SqlCommand command = new SqlCommand(viajesQuery, connection))
-            {
-                command.Parameters.Add("@ChoferId", SqlDbType.VarChar, 30).Value = identificacionChofer;
-
-                using SqlDataReader reader = command.ExecuteReader();
-
-                while (reader.Read())
-                {
-                    model.Viajes.Add(new ViajeAsignadoDTO
-                    {
-                        IdViaje = reader["NumeroViaje"].ToString() ?? string.Empty,
-                        Ruta = reader["Ruta"].ToString() ?? string.Empty,
-                        UnidadPlaca = reader["PlacaUnidad"].ToString() ?? string.Empty,
-                        HorarioSalida = Convert.ToDateTime(reader["FechaHoraSalida"]).ToString("dd/MM/yyyy HH:mm"),
-                        Ocupacion = $"{reader["AsientosOcupados"]}/{reader["CapacidadPasajeros"]}",
-                        Estado = reader["Estado"].ToString() ?? string.Empty
-                    });
-                }
-            }
-
-            return model;
-        }
     }
 }

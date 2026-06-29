@@ -33,6 +33,11 @@ namespace SistemaTicoBus.WEB.Services.Api
             return await PostAsync<ChangePasswordViewModel, CambioClaveApiDatos>("api/auth/cambiar-clave", model);
         }
 
+        public async Task<ApiResultado<ChoferDashboardViewModel>> ObtenerDashboardChoferAsync(int usuarioId)
+        {
+            return await GetAsync<ChoferDashboardViewModel>($"api/choferes/dashboard/{usuarioId}");
+        }
+
         public async Task<ApiResultado<List<ChoferViewModel>>> ObtenerChoferesAsync(string? busqueda)
         {
             string url = "api/choferes";

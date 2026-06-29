@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using SistemaTicoBus.DA.Data;
 using SistemaTicoBus.MODEL.Entidades;
+using SistemaTicoBus.WEB.Models;
 using SistemaTicoBus.WEB.Services.Api;
 
 namespace SistemaTicoBus.WEB.Controllers
@@ -9,12 +9,10 @@ namespace SistemaTicoBus.WEB.Controllers
     public class ViajesController : Controller
     {
         private readonly ITicoBusApiClient _apiClient;
-        private readonly AppDbContext _context;
 
-        public ViajesController(ITicoBusApiClient apiClient, AppDbContext context)
+        public ViajesController(ITicoBusApiClient apiClient)
         {
             _apiClient = apiClient;
-            _context = context;
         }
 
         public async Task<IActionResult> Index(string? filtro)
@@ -35,7 +33,7 @@ namespace SistemaTicoBus.WEB.Controllers
             }
 
             ViewBag.Filtro = filtro;
-            CargarListasParaVista();
+            await CargarListasParaVistaAsync();
 
             return View(viajes);
         }
@@ -139,16 +137,38 @@ namespace SistemaTicoBus.WEB.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        private void CargarListasParaVista()
+        private async Task CargarListasParaVistaAsync()
         {
-            ViewBag.Rutas = new SelectList(_context.Rutas.ToList(), "Id", "Nombre");
-            ViewBag.Unidades = new SelectList(_context.Unidades.ToList(), "Placa", "Placa");
+            ApiResultado<List<Ruta>> resultadoRutas = await _apiClient.ObtenerRutasAsync(null);
+            ApiResultado<List<Unidad>> resultadoUnidades = await _apiClient.ObtenerUnidadesAsync();
+            ApiResultado<List<ChoferViewModel>> resultadoChoferes = await _apiClient.ObtenerChoferesAsync(null);
+
+            ViewBag.Rutas = new SelectList(
+                resultadoRutas.Exito && resultadoRutas.Datos != null
+                    ? resultadoRutas.Datos
+                    : new List<Ruta>(),
+                "Id",
+                "Nombre"
+            );
+
+            ViewBag.Unidades = new SelectList(
+                resultadoUnidades.Exito && resultadoUnidades.Datos != null
+                    ? resultadoUnidades.Datos
+                    : new List<Unidad>(),
+                "Placa",
+                "Placa"
+            );
+
             ViewBag.Choferes = new SelectList(
-                _context.Choferes.Select(c => new {
-                    c.Identificacion,
-                    NombreCompleto = c.Nombre + " " + c.Apellidos
-                }).ToList(),
-                "Identificacion", "NombreCompleto"
+                resultadoChoferes.Exito && resultadoChoferes.Datos != null
+                    ? resultadoChoferes.Datos.Select(c => new
+                    {
+                        c.Identificacion,
+                        NombreCompleto = c.Nombre + " " + c.Apellidos
+                    }).ToList()
+                    : new List<object>(),
+                "Identificacion",
+                "NombreCompleto"
             );
         }
     }
