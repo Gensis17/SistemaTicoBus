@@ -8,7 +8,12 @@ namespace SistemaTicoBus.BL
 {
     public class ReservaBL
     {
-        private readonly ReservaRepositorio _repositorio = new ReservaRepositorio();
+        private readonly ReservaRepositorio _repositorio;
+
+        public ReservaBL(ReservaRepositorio repositorio)
+        {
+            _repositorio = repositorio;
+        }
 
         public List<Reserva> ObtenerMisViajes(string nombreUsuario)
         {

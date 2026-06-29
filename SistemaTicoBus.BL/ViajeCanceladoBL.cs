@@ -10,9 +10,9 @@ namespace SistemaTicoBus.BL
     {
         private readonly ViajeCanceladoRepositorio repositorio;
 
-        public ViajeCanceladoBL(string connectionString)
+        public ViajeCanceladoBL(ViajeCanceladoRepositorio repositorio)
         {
-            repositorio = new ViajeCanceladoRepositorio(connectionString);
+            this.repositorio = repositorio;
         }
 
         public List<ViajeCancelado> ListarViajesCancelados()

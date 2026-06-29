@@ -8,21 +8,21 @@ namespace SistemaTicoBus.BL
 {
     public class UnidadBL
     {
-        private readonly UnidadRepositorio _repositorio;
+        private readonly UnidadRepositorio _repo;
 
-        public UnidadBL()
+        public UnidadBL(UnidadRepositorio repo)
         {
-            _repositorio = new UnidadRepositorio();
+            _repo = repo;
         }
 
         public List<Unidad> Listar()
         {
-            return _repositorio.ObtenerUnidades();
+            return _repo.ObtenerUnidades();
         }
 
         public Unidad ObtenerPorPlaca(string placa)
         {
-            return _repositorio.ObtenerUnidadPorPlaca(placa);
+            return _repo.ObtenerUnidadPorPlaca(placa);
         }
 
         public string Agregar(Unidad unidad)
@@ -39,10 +39,10 @@ namespace SistemaTicoBus.BL
             if (unidad.CapacidadPasajeros <= 0)
                 return "La capacidad debe ser mayor que cero.";
 
-            if (_repositorio.ExistePlaca(unidad.Placa))
+            if (_repo.ExistePlaca(unidad.Placa))
                 return "Ya existe una unidad registrada con esa placa.";
 
-            _repositorio.AgregarUnidad(unidad);
+            _repo.AgregarUnidad(unidad);
 
             return "";
         }
@@ -62,12 +62,12 @@ namespace SistemaTicoBus.BL
                 return "La capacidad debe ser mayor que cero.";
 
             if (placaOriginal != unidad.Placa &&
-                _repositorio.ExistePlaca(unidad.Placa))
+                _repo.ExistePlaca(unidad.Placa))
             {
                 return "La nueva placa ya existe.";
             }
 
-            _repositorio.EditarUnidad(unidad, placaOriginal);
+            _repo.EditarUnidad(unidad, placaOriginal);
 
             return "";
         }
