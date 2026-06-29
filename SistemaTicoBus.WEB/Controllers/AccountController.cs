@@ -2,8 +2,8 @@
 using SistemaTicoBus.MODEL.Entidades;
 using SistemaTicoBus.WEB.Models;
 using SistemaTicoBus.WEB.Services.Api;
-namespace SistemaTicoBus.WEB.Controllers
 
+namespace SistemaTicoBus.WEB.Controllers
 {
     public class AccountController : Controller
     {
@@ -104,6 +104,11 @@ namespace SistemaTicoBus.WEB.Controllers
 
             TempData["MensajeExito"] = resultado.Mensaje;
 
+            if (resultado.Datos.Rol == RolAdministrador)
+            {
+                return RedirectToAction(nameof(AdminDashboard));
+            }
+
             if (resultado.Datos.Rol == RolChofer)
             {
                 return RedirectToAction(nameof(ChoferDashboard));
@@ -175,7 +180,7 @@ namespace SistemaTicoBus.WEB.Controllers
             {
                 return RedirectToAction(nameof(Login));
             }
-            
+
             if (string.IsNullOrWhiteSpace(Origen) ||
                 string.IsNullOrWhiteSpace(Destino) ||
                 string.IsNullOrWhiteSpace(DuracionEstimada) ||
@@ -272,11 +277,11 @@ namespace SistemaTicoBus.WEB.Controllers
             ViewBag.Tab = tab;
             return View(resultado.Datos);
         }
+
         private bool UsuarioTieneRol(string rolRequerido)
         {
             string? rolSesion = HttpContext.Session.GetString("Rol");
             return rolSesion == rolRequerido;
         }
-
     }
 }

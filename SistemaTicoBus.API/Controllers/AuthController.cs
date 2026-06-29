@@ -167,10 +167,10 @@ namespace SistemaTicoBus.API.Controllers
                 return BadRequest(ApiRespuesta<CambioClaveRespuesta>.Error("No existe un usuario con ese nombre."));
             }
 
-            if (usuario.Rol != RolChofer && usuario.Rol != RolPasajero)
+            if (usuario.Rol != RolAdministrador && usuario.Rol != RolChofer && usuario.Rol != RolPasajero)
             {
                 return BadRequest(ApiRespuesta<CambioClaveRespuesta>.Error(
-                    "El cambio de clave solo está habilitado para usuarios Chofer y Pasajero."
+                    "El rol del usuario no es válido para cambiar la clave."
                 ));
             }
 
@@ -186,8 +186,18 @@ namespace SistemaTicoBus.API.Controllers
                 ));
             }
 
-            ActualizarClave(usuario.Id, solicitud.NuevaClave);
-            ResetearIntentos(usuario.Id);
+            try
+            {
+                ActualizarClave(usuario.Id, solicitud.NuevaClave);
+                ResetearIntentos(usuario.Id);
+            }
+            catch (SqlException)
+            {
+                return StatusCode(
+                    StatusCodes.Status503ServiceUnavailable,
+                    ApiRespuesta<CambioClaveRespuesta>.Error("No se pudo actualizar la clave en la base de datos.")
+                );
+            }
 
             await IntentarEnviarCorreoCambioClaveAsync(usuario.Correo, usuario.NombreUsuario);
 
