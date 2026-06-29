@@ -8,7 +8,12 @@ namespace SistemaTicoBus.DA.Repositorios
 {
     public class ReservaRepositorio
     {
-        private readonly string _connectionString = "Server=localhost\\SQLEXPRESS;Database=TicoBusDB;Trusted_Connection=True;TrustServerCertificate=True;";
+        private readonly string _connectionString;
+
+        public ReservaRepositorio(string connectionString)
+        {
+            _connectionString = connectionString;
+        }
 
         public List<Reserva> ObtenerReservasPorPasajero(string nombreUsuario)
         {

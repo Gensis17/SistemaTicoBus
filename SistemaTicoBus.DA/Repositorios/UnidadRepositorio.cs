@@ -8,8 +8,12 @@ namespace SistemaTicoBus.DA.Repositorios
 {
     public class UnidadRepositorio
     {
-        private readonly string _connectionString =
-           "Server=localhost\\SQLEXPRESS;Database=TicoBusDB;Trusted_Connection=True;TrustServerCertificate=True;";
+        private readonly string _connectionString;
+
+        public UnidadRepositorio(string connectionString)
+        {
+            _connectionString = connectionString;
+        }
 
         // LISTAR
         public List<Unidad> ObtenerUnidades()
