@@ -73,14 +73,12 @@
                             </td>
                             <td class="text-end">
                                 <button type="button"
-                                        class="btn btn-sm btn-outline-warning border-0"
+                                        class="btn btn-sm btn-outline-warning border-0 btn-editar-chofer"
                                         title="Editar"
-                                        onclick="prepararEdicion(
-                                            @Html.Raw(JsonSerializer.Serialize(chofer.Identificacion)),
-                                            @Html.Raw(JsonSerializer.Serialize(chofer.Nombre)),
-                                            @Html.Raw(JsonSerializer.Serialize(chofer.Apellidos)),
-                                            @Html.Raw(JsonSerializer.Serialize(chofer.Correo))
-                                        )">
+                                        data-identificacion="@chofer.Identificacion"
+                                        data-nombre="@chofer.Nombre"
+                                        data-apellidos="@chofer.Apellidos"
+                                        data-correo="@chofer.Correo">
                                     <i class="bi bi-pencil-square"></i>
                                 </button>
 
@@ -143,13 +141,13 @@
                                class="form-control"
                                placeholder="Ej: 111111111"
                                required
-                               minlength="6"
+                               minlength="9"
                                maxlength="20"
-                               pattern="[0-9]+"
-                               inputmode="numeric"
+                               pattern="[0-9\-]+"
+                               inputmode="text"
                                data-solo-numeros="true"
-                               title="La cédula solo puede contener números. No use letras, espacios ni guiones." />
-                        <small class="text-muted">Solo números. No use letras, espacios ni guiones.</small>
+                               title="La cédula solo puede contener números y guiones." />
+                        <small class="text-muted">Solo números y guiones.</small>
                     </div>
 
                     <div class="mb-3">
@@ -233,13 +231,13 @@
                                name="Identificacion"
                                class="form-control"
                                required
-                               minlength="6"
+                               minlength="9"
                                maxlength="20"
-                               pattern="[0-9]+"
-                               inputmode="numeric"
+                               pattern="[0-9\-]+"
+                               inputmode="text"
                                data-solo-numeros="true"
-                               title="La cédula solo puede contener números. No use letras, espacios ni guiones." />
-                        <small class="text-muted">Solo números. No use letras, espacios ni guiones.</small>
+                               title="La cédula solo puede contener números y guiones." />
+                        <small class="text-muted">Solo números y guiones.</small>
                     </div>
 
                     <div class="mb-3">
@@ -308,9 +306,20 @@
             new bootstrap.Modal(document.getElementById('modalEditarChofer')).show();
         }
 
+        document.querySelectorAll('.btn-editar-chofer').forEach(function (boton) {
+            boton.addEventListener('click', function () {
+                prepararEdicion(
+                    this.dataset.identificacion || '',
+                    this.dataset.nombre || '',
+                    this.dataset.apellidos || '',
+                    this.dataset.correo || ''
+                );
+            });
+        });
+
         document.querySelectorAll('[data-solo-numeros="true"]').forEach(function (input) {
             input.addEventListener('input', function () {
-                this.value = this.value.replace(/\D/g, '');
+                this.value = this.value.replace(/[^0-9-]/g, '');
             });
         });
 
@@ -342,12 +351,14 @@
                 return 'La cédula es requerida.';
             }
 
-            if (!/^\d+$/.test(identificacion)) {
-                return 'La cédula solo puede contener números. No use letras, espacios ni guiones.';
+            if (!/^[0-9-]+$/.test(identificacion)) {
+                return 'La cédula solo puede contener números y guiones.';
             }
 
-            if (identificacion.length < 6 || identificacion.length > 20) {
-                return 'La cédula debe tener entre 6 y 20 números.';
+            const cantidadDigitos = identificacion.replace(/\D/g, '').length;
+
+            if (cantidadDigitos < 9 || cantidadDigitos > 20) {
+                return 'La cédula debe tener entre 9 y 20 números.';
             }
 
             if (existeIdentificacionEnTabla(identificacion, idOriginal)) {

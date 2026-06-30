@@ -212,12 +212,14 @@ namespace SistemaTicoBus.WEB.Controllers
                 return "La cédula es requerida.";
             }
 
-            if (!Regex.IsMatch(model.Identificacion, @"^\d+$"))
+            if (!Regex.IsMatch(model.Identificacion, @"^[0-9\-]+$"))
             {
-                return "La cédula solo puede contener números. No use letras, espacios ni guiones.";
+                return "La cédula solo puede contener números y guiones.";
             }
 
-            if (model.Identificacion.Length < 6 || model.Identificacion.Length > 20)
+            int cantidadDigitos = Regex.Replace(model.Identificacion, @"\D", "").Length;
+
+            if (cantidadDigitos < 6 || cantidadDigitos > 20)
             {
                 return "La cédula debe tener entre 6 y 20 números.";
             }

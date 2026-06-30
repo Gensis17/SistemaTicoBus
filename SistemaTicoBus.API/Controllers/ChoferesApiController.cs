@@ -764,12 +764,14 @@ namespace SistemaTicoBus.API.Controllers
                 return "La cédula es requerida.";
             }
 
-            if (!Regex.IsMatch(identificacion, @"^\d+$"))
+            if (!Regex.IsMatch(identificacion, @"^[0-9\-]+$"))
             {
-                return "La cédula solo puede contener números. No use letras, espacios ni guiones.";
+                return "La cédula solo puede contener números y guiones.";
             }
 
-            if (identificacion.Length < 6 || identificacion.Length > 20)
+            int cantidadDigitos = Regex.Replace(identificacion, @"\D", "").Length;
+
+            if (cantidadDigitos < 6 || cantidadDigitos > 20)
             {
                 return "La cédula debe tener entre 6 y 20 números.";
             }

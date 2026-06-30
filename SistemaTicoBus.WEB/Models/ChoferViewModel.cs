@@ -5,8 +5,8 @@ namespace SistemaTicoBus.WEB.Models
     public class ChoferViewModel
     {
         [Required(ErrorMessage = "La cédula es requerida.")]
-        [RegularExpression(@"^\d+$", ErrorMessage = "La cédula solo puede contener números. No use letras, espacios ni guiones.")]
-        [StringLength(20, MinimumLength = 6, ErrorMessage = "La cédula debe tener entre 6 y 20 números.")]
+        [RegularExpression(@"^[0-9\-]+$", ErrorMessage = "La cédula solo puede contener números y guiones.")]
+        [StringLength(20, MinimumLength = 6, ErrorMessage = "La cédula debe tener entre 6 y 20 caracteres.")]
         public string Identificacion { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "El nombre es requerido.")]
