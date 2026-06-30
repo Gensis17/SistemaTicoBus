@@ -11,4 +11,16 @@
         ContentTemplate="{DataTemplate views:LoginPage}"
         Route="LoginPage" />
 
+    <ShellContent
+        ContentTemplate="{DataTemplate views:InicioPage}"
+        Route="InicioPage" />
+
+    <ShellContent
+        ContentTemplate="{DataTemplate views:MisReservasPage}"
+        Route="MisReservasPage" />
+
+    <ShellContent
+        ContentTemplate="{DataTemplate views:PerfilPage}"
+        Route="PerfilPage" />
+
 </Shell>

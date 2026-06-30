@@ -8,10 +8,7 @@ namespace SistemaTicoBus.MAUI
         {
             InitializeComponent();
 
-            Routing.RegisterRoute("InicioPage", typeof(InicioPage));
-            Routing.RegisterRoute("MisReservasPage", typeof(MisReservasPage));
             Routing.RegisterRoute("DetalleReservaPage", typeof(DetalleReservaPage));
-            Routing.RegisterRoute("PerfilPage", typeof(PerfilPage));
         }
     }
 }
