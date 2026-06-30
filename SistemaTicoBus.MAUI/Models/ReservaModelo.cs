@@ -12,8 +12,8 @@
         public ViajeModelo? Viaje { get; set; }
 
         public string RutaTexto => Viaje?.Ruta != null
-            ? $"{Viaje.Ruta.Origen} → {Viaje.Ruta.Destino}"
-            : string.Empty;
+                    ? Viaje.Ruta.NombreFormateado
+                    : string.Empty;
     }
 
     public class ViajeModelo
@@ -38,6 +38,19 @@
         public string Destino { get; set; } = string.Empty;
         public string Duracion { get; set; } = string.Empty;
         public decimal PrecioBase { get; set; }
+
+        public string NombreFormateado
+        {
+            get
+            {
+                if (!string.IsNullOrWhiteSpace(Origen) && !string.IsNullOrWhiteSpace(Destino))
+                    return $"{Origen} → {Destino}";
+
+                string texto = Nombre.Replace("Ruta ", string.Empty).Trim();
+                texto = texto.Replace(" - ", " → ");
+                return texto;
+            }
+        }
     }
 
     public class ChoferModelo

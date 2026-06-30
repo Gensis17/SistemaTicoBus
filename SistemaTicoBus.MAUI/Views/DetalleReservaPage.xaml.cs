@@ -43,13 +43,15 @@ namespace SistemaTicoBus.MAUI.Views
             var viaje = reserva.Viaje;
             var ruta = viaje.Ruta;
 
-            LabelRuta.Text = $"{ruta.Origen} → {ruta.Destino}";
+            LabelRuta.Text = ruta.NombreFormateado;
             LabelEstado.Text = viaje.Estado;
             LabelFechaSalida.Text = viaje.FechaHoraSalida.ToString("dd/MM/yyyy, HH:mm");
             LabelFechaLlegada.Text = viaje.FechaHoraLlegadaEstimada.ToString("dd/MM/yyyy, HH:mm");
             LabelAsiento.Text = $"Asiento {reserva.NumeroAsiento}";
             LabelMonto.Text = reserva.MontoPagado.ToString("C", new System.Globalization.CultureInfo("es-CR"));
             LabelPlaca.Text = $"Placa: {viaje.PlacaUnidad}";
+            LabelPrecioBase.Text = ruta.PrecioBase.ToString("C", new System.Globalization.CultureInfo("es-CR"));
+            LabelMontoResumen.Text = reserva.MontoPagado.ToString("C", new System.Globalization.CultureInfo("es-CR"));
 
             if (viaje.Chofer != null)
             {
