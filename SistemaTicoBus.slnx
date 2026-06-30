@@ -2,6 +2,7 @@
   <Project Path="SistemaTicoBus.API/SistemaTicoBus.API.csproj" />
   <Project Path="SistemaTicoBus.BL/SistemaTicoBus.BL.csproj" />
   <Project Path="SistemaTicoBus.DA/SistemaTicoBus.DA.csproj" />
+  <Project Path="SistemaTicoBus.MAUI/SistemaTicoBus.MAUI.csproj" Id="28aab8f3-4c53-473d-a02f-5a82c53bb40f" />
   <Project Path="SistemaTicoBus.MODEL/SistemaTicoBus.MODEL.csproj" />
   <Project Path="SistemaTicoBus.WEB/SistemaTicoBus.WEB.csproj" />
 </Solution>

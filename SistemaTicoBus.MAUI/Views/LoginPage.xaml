@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentPage
+    x:Class="SistemaTicoBus.MAUI.Views.LoginPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    BackgroundColor="{StaticResource PageBackground}"
+    Shell.NavBarIsVisible="False">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="30" Spacing="0" VerticalOptions="Center">
+
+            <Border
+                HeightRequest="90"
+                WidthRequest="90"
+                BackgroundColor="{StaticResource Primary}"
+                StrokeThickness="0"
+                HorizontalOptions="Center"
+                Padding="0"
+                Margin="0,0,0,20">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="45" />
+                </Border.StrokeShape>
+                <Label
+                    Text="&#128652;"
+                    FontSize="40"
+                    HorizontalOptions="Center"
+                    VerticalOptions="Center" />
+            </Border>
+
+            <Label
+                Text="TicoBus"
+                FontSize="32"
+                FontAttributes="Bold"
+                TextColor="{StaticResource Primary}"
+                HorizontalOptions="Center" />
+
+            <Label
+                Text="Tu conexión inteligente con la red de transporte urbano."
+                FontSize="14"
+                TextColor="{StaticResource TextSecondary}"
+                HorizontalOptions="Center"
+                HorizontalTextAlignment="Center"
+                Margin="0,5,0,30" />
+
+            <Border
+                BackgroundColor="{StaticResource SurfaceBackground}"
+                Padding="20"
+                Stroke="{StaticResource BorderColor}"
+                StrokeThickness="1">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="16" />
+                </Border.StrokeShape>
+
+                <VerticalStackLayout Spacing="15">
+
+                    <Label Text="USUARIO" FontSize="12" TextColor="{StaticResource TextSecondary}" />
+                    <Border
+                        BackgroundColor="{StaticResource InputBackground}"
+                        Padding="12,0"
+                        Stroke="{StaticResource BorderColor}"
+                        StrokeThickness="1"
+                        HeightRequest="48">
+                        <Border.StrokeShape>
+                            <RoundRectangle CornerRadius="10" />
+                        </Border.StrokeShape>
+                        <Entry
+                            x:Name="EntryUsuario"
+                            Placeholder="tu usuario"
+                            PlaceholderColor="{StaticResource PlaceholderColor}"
+                            TextColor="{StaticResource TextPrimary}"
+                            BackgroundColor="Transparent"
+                            VerticalOptions="Center" />
+                    </Border>
+
+                    <Label Text="CONTRASEÑA" FontSize="12" TextColor="{StaticResource TextSecondary}" Margin="0,5,0,0" />
+                    <Border
+                        BackgroundColor="{StaticResource InputBackground}"
+                        Padding="12,0"
+                        Stroke="{StaticResource BorderColor}"
+                        StrokeThickness="1"
+                        HeightRequest="48">
+                        <Border.StrokeShape>
+                            <RoundRectangle CornerRadius="10" />
+                        </Border.StrokeShape>
+                        <Entry
+                            x:Name="EntryClave"
+                            Placeholder="••••••••"
+                            PlaceholderColor="{StaticResource PlaceholderColor}"
+                            TextColor="{StaticResource TextPrimary}"
+                            BackgroundColor="Transparent"
+                            IsPassword="True"
+                            VerticalOptions="Center" />
+                    </Border>
+
+                    <Label
+                        x:Name="LabelError"
+                        TextColor="{StaticResource ErrorText}"
+                        FontSize="13"
+                        IsVisible="False"
+                        HorizontalTextAlignment="Center"
+                        Margin="0,5,0,0" />
+
+                    <Button
+                        x:Name="BtnIngresar"
+                        Text="Iniciar Sesión  →"
+                        BackgroundColor="{StaticResource Primary}"
+                        TextColor="{StaticResource PrimaryText}"
+                        FontAttributes="Bold"
+                        CornerRadius="10"
+                        HeightRequest="50"
+                        Margin="0,10,0,0"
+                        Clicked="BtnIngresar_Clicked" />
+
+                    <ActivityIndicator
+                        x:Name="LoadingIndicator"
+                        IsVisible="False"
+                        IsRunning="False"
+                        Color="{StaticResource Primary}" />
+
+                </VerticalStackLayout>
+            </Border>
+
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

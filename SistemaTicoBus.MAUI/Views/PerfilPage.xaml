@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentPage
+    x:Class="SistemaTicoBus.MAUI.Views.PerfilPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    BackgroundColor="{StaticResource PageBackground}"
+    Shell.NavBarIsVisible="False">
+
+    <Grid RowDefinitions="Auto,*,Auto">
+
+        <Grid Row="0" Padding="20,50,20,15" BackgroundColor="{StaticResource SurfaceBackground}">
+            <Label
+                Text="Perfil"
+                FontSize="22"
+                FontAttributes="Bold"
+                TextColor="{StaticResource Primary}"
+                VerticalOptions="Center" />
+        </Grid>
+
+        <VerticalStackLayout Grid.Row="1" Padding="25" Spacing="20" VerticalOptions="Start">
+
+            <Border
+                HeightRequest="80"
+                WidthRequest="80"
+                BackgroundColor="{StaticResource Primary}"
+                StrokeThickness="0"
+                HorizontalOptions="Center"
+                Padding="0"
+                Margin="0,20,0,0">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="40" />
+                </Border.StrokeShape>
+                <Label
+                    Text="&#128100;"
+                    FontSize="34"
+                    HorizontalOptions="Center"
+                    VerticalOptions="Center" />
+            </Border>
+
+            <Label
+                x:Name="LabelNombre"
+                FontSize="20"
+                FontAttributes="Bold"
+                TextColor="{StaticResource TextPrimary}"
+                HorizontalOptions="Center" />
+
+            <Label
+                x:Name="LabelRol"
+                FontSize="13"
+                TextColor="{StaticResource TextSecondary}"
+                HorizontalOptions="Center"
+                Margin="0,-15,0,10" />
+
+            <Border
+                BackgroundColor="{StaticResource SurfaceBackground}"
+                Padding="0"
+                Stroke="{StaticResource BorderColor}"
+                StrokeThickness="1">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="16" />
+                </Border.StrokeShape>
+
+                <VerticalStackLayout>
+                    <Button
+                        Text="Cerrar Sesión"
+                        BackgroundColor="Transparent"
+                        TextColor="{StaticResource ErrorText}"
+                        FontAttributes="Bold"
+                        HeightRequest="50"
+                        Clicked="BtnCerrarSesion_Clicked" />
+                </VerticalStackLayout>
+            </Border>
+
+        </VerticalStackLayout>
+
+        <Grid
+            Row="2"
+            ColumnDefinitions="*,*,*"
+            BackgroundColor="{StaticResource SurfaceBackground}"
+            Padding="0,12,0,12">
+
+            <VerticalStackLayout Grid.Column="0" Spacing="2">
+                <VerticalStackLayout.GestureRecognizers>
+                    <TapGestureRecognizer Tapped="TabInicio_Tapped" />
+                </VerticalStackLayout.GestureRecognizers>
+                <Label Text="&#127968;" FontSize="20" HorizontalOptions="Center" TextColor="{StaticResource TextSecondary}" />
+                <Label Text="Inicio" FontSize="11" HorizontalOptions="Center" TextColor="{StaticResource TextSecondary}" />
+            </VerticalStackLayout>
+
+            <VerticalStackLayout Grid.Column="1" Spacing="2">
+                <VerticalStackLayout.GestureRecognizers>
+                    <TapGestureRecognizer Tapped="TabMisReservas_Tapped" />
+                </VerticalStackLayout.GestureRecognizers>
+                <Label Text="&#127915;" FontSize="20" HorizontalOptions="Center" TextColor="{StaticResource TextSecondary}" />
+                <Label Text="Mis Reservas" FontSize="11" HorizontalOptions="Center" TextColor="{StaticResource TextSecondary}" />
+            </VerticalStackLayout>
+
+            <VerticalStackLayout Grid.Column="2" Spacing="2">
+                <Label Text="&#128100;" FontSize="20" HorizontalOptions="Center" TextColor="{StaticResource Primary}" />
+                <Label Text="Perfil" FontSize="11" HorizontalOptions="Center" TextColor="{StaticResource Primary}" />
+            </VerticalStackLayout>
+
+        </Grid>
+
+    </Grid>
+</ContentPage>

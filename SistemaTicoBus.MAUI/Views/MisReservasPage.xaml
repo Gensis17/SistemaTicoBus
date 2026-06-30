@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentPage
+    x:Class="SistemaTicoBus.MAUI.Views.MisReservasPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:models="clr-namespace:SistemaTicoBus.MAUI.Models"
+    BackgroundColor="{StaticResource PageBackground}"
+    Shell.NavBarIsVisible="False">
+
+    <Grid RowDefinitions="Auto,*,Auto">
+
+        <Grid Row="0" Padding="20,50,20,15" ColumnDefinitions="Auto,*" BackgroundColor="{StaticResource SurfaceBackground}">
+            <Label
+                Grid.Column="0"
+                Text="&#8592;"
+                FontSize="22"
+                TextColor="{StaticResource Primary}"
+                VerticalOptions="Center">
+                <Label.GestureRecognizers>
+                    <TapGestureRecognizer Tapped="BtnVolver_Tapped" />
+                </Label.GestureRecognizers>
+            </Label>
+            <Label
+                Grid.Column="1"
+                Text="TicoBus"
+                FontSize="22"
+                FontAttributes="Bold"
+                TextColor="{StaticResource Primary}"
+                Margin="15,0,0,0"
+                VerticalOptions="Center" />
+        </Grid>
+
+        <Grid Row="1" Padding="20" RowDefinitions="Auto,Auto,*">
+
+            <VerticalStackLayout Grid.Row="0" Spacing="2" Margin="0,0,0,15">
+                <Label
+                    Text="Mis Reservas"
+                    FontSize="26"
+                    FontAttributes="Bold"
+                    TextColor="{StaticResource TextPrimary}" />
+                <Label
+                    Text="Gestiona tus próximos viajes y revisa tu historial."
+                    FontSize="13"
+                    TextColor="{StaticResource TextSecondary}" />
+            </VerticalStackLayout>
+
+            <ActivityIndicator
+                Grid.Row="2"
+                x:Name="LoadingIndicator"
+                IsRunning="True"
+                Color="{StaticResource Primary}"
+                VerticalOptions="Center" />
+
+            <Label
+                Grid.Row="2"
+                x:Name="LabelSinReservas"
+                Text="No tenés reservas registradas."
+                FontSize="14"
+                TextColor="{StaticResource TextMuted}"
+                HorizontalOptions="Center"
+                VerticalOptions="Center"
+                IsVisible="False" />
+
+            <CollectionView
+                Grid.Row="2"
+                x:Name="ListaReservas"
+                IsVisible="False"
+                SelectionMode="None">
+                <CollectionView.ItemsLayout>
+                    <LinearItemsLayout Orientation="Vertical" ItemSpacing="15" />
+                </CollectionView.ItemsLayout>
+
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="models:ReservaModelo">
+                        <Border
+                            BackgroundColor="{StaticResource SurfaceBackground}"
+                            Padding="18"
+                            Stroke="{StaticResource BorderColor}"
+                            StrokeThickness="1">
+                            <Border.StrokeShape>
+                                <RoundRectangle CornerRadius="16" />
+                            </Border.StrokeShape>
+
+                            <Border.GestureRecognizers>
+                                <TapGestureRecognizer Tapped="ReservaCard_Tapped" />
+                            </Border.GestureRecognizers>
+
+                            <VerticalStackLayout Spacing="10">
+
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <Label
+                                        Grid.Column="0"
+                                        Text="{Binding RutaTexto}"
+                                        FontSize="17"
+                                        FontAttributes="Bold"
+                                        TextColor="{StaticResource TextPrimary}" />
+
+                                    <Border
+                                        Grid.Column="1"
+                                        BackgroundColor="{StaticResource SuccessBackground}"
+                                        Padding="10,4"
+                                        StrokeThickness="0"
+                                        VerticalOptions="Start">
+                                        <Border.StrokeShape>
+                                            <RoundRectangle CornerRadius="12" />
+                                        </Border.StrokeShape>
+                                        <Label
+                                            Text="{Binding Viaje.Estado}"
+                                            FontSize="11"
+                                            TextColor="{StaticResource SuccessText}" />
+                                    </Border>
+                                </Grid>
+
+                                <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10">
+                                    <VerticalStackLayout Grid.Column="0" Spacing="2">
+                                        <Label Text="FECHA" FontSize="10" TextColor="{StaticResource TextMuted}" />
+                                        <Label
+                                            Text="{Binding Viaje.FechaHoraSalida, StringFormat='{0:dd MMM}'}"
+                                            FontSize="13"
+                                            TextColor="{StaticResource TextPrimary}" />
+                                    </VerticalStackLayout>
+
+                                    <VerticalStackLayout Grid.Column="1" Spacing="2">
+                                        <Label Text="HORA" FontSize="10" TextColor="{StaticResource TextMuted}" />
+                                        <Label
+                                            Text="{Binding Viaje.FechaHoraSalida, StringFormat='{0:HH:mm}'}"
+                                            FontSize="13"
+                                            TextColor="{StaticResource TextPrimary}" />
+                                    </VerticalStackLayout>
+
+                                    <VerticalStackLayout Grid.Column="2" Spacing="2">
+                                        <Label Text="ASIENTO" FontSize="10" TextColor="{StaticResource TextMuted}" />
+                                        <Label
+                                            Text="{Binding NumeroAsiento}"
+                                            FontSize="13"
+                                            FontAttributes="Bold"
+                                            TextColor="{StaticResource AccentBlue}" />
+                                    </VerticalStackLayout>
+                                </Grid>
+
+                                <Border
+                                    BackgroundColor="Transparent"
+                                    Stroke="{StaticResource AccentBlue}"
+                                    StrokeThickness="1"
+                                    Padding="0,10"
+                                    Margin="0,8,0,0">
+                                    <Border.StrokeShape>
+                                        <RoundRectangle CornerRadius="10" />
+                                    </Border.StrokeShape>
+                                    <Label
+                                        Text="Ver Ticket"
+                                        FontSize="13"
+                                        TextColor="{StaticResource AccentBlue}"
+                                        FontAttributes="Bold"
+                                        HorizontalOptions="Center" />
+                                </Border>
+
+                            </VerticalStackLayout>
+                        </Border>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+
+        </Grid>
+
+        <Grid
+            Row="2"
+            ColumnDefinitions="*,*,*"
+            BackgroundColor="{StaticResource SurfaceBackground}"
+            Padding="0,12,0,12">
+
+            <VerticalStackLayout Grid.Column="0" Spacing="2">
+                <VerticalStackLayout.GestureRecognizers>
+                    <TapGestureRecognizer Tapped="TabInicio_Tapped" />
+                </VerticalStackLayout.GestureRecognizers>
+                <Label Text="&#127968;" FontSize="20" HorizontalOptions="Center" TextColor="{StaticResource TextSecondary}" />
+                <Label Text="Inicio" FontSize="11" HorizontalOptions="Center" TextColor="{StaticResource TextSecondary}" />
+            </VerticalStackLayout>
+
+            <VerticalStackLayout Grid.Column="1" Spacing="2">
+                <Label Text="&#127915;" FontSize="20" HorizontalOptions="Center" TextColor="{StaticResource Primary}" />
+                <Label Text="Mis Reservas" FontSize="11" HorizontalOptions="Center" TextColor="{StaticResource Primary}" />
+            </VerticalStackLayout>
+
+            <VerticalStackLayout Grid.Column="2" Spacing="2">
+                <VerticalStackLayout.GestureRecognizers>
+                    <TapGestureRecognizer Tapped="TabPerfil_Tapped" />
+                </VerticalStackLayout.GestureRecognizers>
+                <Label Text="&#128100;" FontSize="20" HorizontalOptions="Center" TextColor="{StaticResource TextSecondary}" />
+                <Label Text="Perfil" FontSize="11" HorizontalOptions="Center" TextColor="{StaticResource TextSecondary}" />
+            </VerticalStackLayout>
+
+        </Grid>
+
+    </Grid>
+</ContentPage>

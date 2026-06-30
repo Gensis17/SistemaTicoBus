@@ -1,0 +1,227 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentPage
+    x:Class="SistemaTicoBus.MAUI.Views.InicioPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    BackgroundColor="{StaticResource PageBackground}"
+    Shell.NavBarIsVisible="False">
+
+    <Grid RowDefinitions="Auto,*,Auto">
+
+        <Grid Row="0" Padding="20,50,20,15" ColumnDefinitions="*,Auto" BackgroundColor="{StaticResource SurfaceBackground}">
+            <Label
+                Grid.Column="0"
+                Text="TicoBus"
+                FontSize="22"
+                FontAttributes="Bold"
+                TextColor="{StaticResource Primary}"
+                VerticalOptions="Center" />
+            <Label
+                Grid.Column="1"
+                Text="&#128276;"
+                FontSize="20"
+                TextColor="{StaticResource Primary}"
+                VerticalOptions="Center" />
+        </Grid>
+
+        <ScrollView Grid.Row="1">
+            <VerticalStackLayout Padding="20" Spacing="20">
+
+                <Label
+                    x:Name="LabelSaludo"
+                    Text="¡Hola, Pasajero!"
+                    FontSize="24"
+                    FontAttributes="Bold"
+                    TextColor="{StaticResource TextPrimary}" />
+                <Label
+                    Text="¿A dónde te llevamos hoy?"
+                    FontSize="14"
+                    TextColor="{StaticResource TextSecondary}"
+                    Margin="0,-15,0,0" />
+
+                <Border
+                    BackgroundColor="{StaticResource SurfaceBackground}"
+                    Padding="20"
+                    Stroke="{StaticResource BorderColor}"
+                    StrokeThickness="1">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="16" />
+                    </Border.StrokeShape>
+
+                    <VerticalStackLayout Spacing="12">
+
+                        <Label Text="ORIGEN" FontSize="12" TextColor="{StaticResource AccentBlue}" />
+                        <Border
+                            BackgroundColor="{StaticResource InputBackground}"
+                            Padding="12,0"
+                            Stroke="{StaticResource BorderColor}"
+                            StrokeThickness="1"
+                            HeightRequest="46">
+                            <Border.StrokeShape>
+                                <RoundRectangle CornerRadius="10" />
+                            </Border.StrokeShape>
+                            <Entry
+                                x:Name="EntryOrigen"
+                                Placeholder="Ciudad de salida"
+                                PlaceholderColor="{StaticResource PlaceholderColor}"
+                                TextColor="{StaticResource TextPrimary}"
+                                BackgroundColor="Transparent"
+                                VerticalOptions="Center" />
+                        </Border>
+
+                        <Label Text="DESTINO" FontSize="12" TextColor="{StaticResource AccentBlue}" />
+                        <Border
+                            BackgroundColor="{StaticResource InputBackground}"
+                            Padding="12,0"
+                            Stroke="{StaticResource BorderColor}"
+                            StrokeThickness="1"
+                            HeightRequest="46">
+                            <Border.StrokeShape>
+                                <RoundRectangle CornerRadius="10" />
+                            </Border.StrokeShape>
+                            <Entry
+                                x:Name="EntryDestino"
+                                Placeholder="Ciudad de llegada"
+                                PlaceholderColor="{StaticResource PlaceholderColor}"
+                                TextColor="{StaticResource TextPrimary}"
+                                BackgroundColor="Transparent"
+                                VerticalOptions="Center" />
+                        </Border>
+
+                        <Label Text="FECHA" FontSize="12" TextColor="{StaticResource AccentBlue}" />
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                            <Border
+                                Grid.Column="0"
+                                BackgroundColor="{StaticResource InputBackground}"
+                                Padding="12,0"
+                                Stroke="{StaticResource BorderColor}"
+                                StrokeThickness="1"
+                                HeightRequest="46">
+                                <Border.StrokeShape>
+                                    <RoundRectangle CornerRadius="10" />
+                                </Border.StrokeShape>
+                                <DatePicker
+                                    x:Name="DatePickerFecha"
+                                    TextColor="{StaticResource TextPrimary}"
+                                    BackgroundColor="Transparent"
+                                    VerticalOptions="Center" />
+                            </Border>
+                            <Button
+                                Grid.Column="1"
+                                Text="BUSCAR"
+                                BackgroundColor="{StaticResource Primary}"
+                                TextColor="{StaticResource PrimaryText}"
+                                FontAttributes="Bold"
+                                FontSize="12"
+                                CornerRadius="10"
+                                WidthRequest="90"
+                                Clicked="BtnBuscarRuta_Clicked" />
+                        </Grid>
+
+                    </VerticalStackLayout>
+                </Border>
+
+                <Label
+                    Text="PRÓXIMO VIAJE"
+                    FontSize="13"
+                    FontAttributes="Bold"
+                    TextColor="{StaticResource TextSecondary}"
+                    Margin="0,10,0,0" />
+
+                <Border
+                    x:Name="CardProximoViaje"
+                    BackgroundColor="{StaticResource SurfaceBackground}"
+                    Padding="18"
+                    Stroke="{StaticResource BorderColor}"
+                    StrokeThickness="1"
+                    IsVisible="False">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="16" />
+                    </Border.StrokeShape>
+
+                    <VerticalStackLayout Spacing="8">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <Label
+                                Grid.Column="0"
+                                x:Name="LabelRutaProximoViaje"
+                                FontSize="16"
+                                FontAttributes="Bold"
+                                TextColor="{StaticResource TextPrimary}" />
+                            <Border
+                                Grid.Column="1"
+                                BackgroundColor="{StaticResource SuccessBackground}"
+                                Padding="10,4"
+                                StrokeThickness="0">
+                                <Border.StrokeShape>
+                                    <RoundRectangle CornerRadius="12" />
+                                </Border.StrokeShape>
+                                <Label
+                                    x:Name="LabelEstadoProximoViaje"
+                                    FontSize="11"
+                                    TextColor="{StaticResource SuccessText}" />
+                            </Border>
+                        </Grid>
+
+                        <Label
+                            x:Name="LabelFechaHoraProximoViaje"
+                            FontSize="13"
+                            TextColor="{StaticResource TextSecondary}" />
+                        <Label
+                            x:Name="LabelAsientoProximoViaje"
+                            FontSize="13"
+                            TextColor="{StaticResource TextSecondary}" />
+
+                        <Button
+                            Text="Ver detalle  →"
+                            BackgroundColor="Transparent"
+                            TextColor="{StaticResource AccentBlue}"
+                            FontAttributes="Bold"
+                            FontSize="13"
+                            HorizontalOptions="Start"
+                            Padding="0"
+                            Clicked="BtnVerProximoViaje_Clicked" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <Label
+                    x:Name="LabelSinViajes"
+                    Text="No tenés viajes próximos."
+                    FontSize="14"
+                    TextColor="{StaticResource TextMuted}"
+                    IsVisible="False"
+                    Margin="0,10,0,0" />
+
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <Grid
+            Row="2"
+            ColumnDefinitions="*,*,*"
+            BackgroundColor="{StaticResource SurfaceBackground}"
+            Padding="0,12,0,12">
+
+            <VerticalStackLayout Grid.Column="0" Spacing="2">
+                <Label Text="&#127968;" FontSize="20" HorizontalOptions="Center" TextColor="{StaticResource Primary}" />
+                <Label Text="Inicio" FontSize="11" HorizontalOptions="Center" TextColor="{StaticResource Primary}" />
+            </VerticalStackLayout>
+
+            <VerticalStackLayout Grid.Column="1" Spacing="2">
+                <VerticalStackLayout.GestureRecognizers>
+                    <TapGestureRecognizer Tapped="TabMisReservas_Tapped" />
+                </VerticalStackLayout.GestureRecognizers>
+                <Label Text="&#127915;" FontSize="20" HorizontalOptions="Center" TextColor="{StaticResource TextSecondary}" />
+                <Label Text="Mis Reservas" FontSize="11" HorizontalOptions="Center" TextColor="{StaticResource TextSecondary}" />
+            </VerticalStackLayout>
+
+            <VerticalStackLayout Grid.Column="2" Spacing="2">
+                <VerticalStackLayout.GestureRecognizers>
+                    <TapGestureRecognizer Tapped="TabPerfil_Tapped" />
+                </VerticalStackLayout.GestureRecognizers>
+                <Label Text="&#128100;" FontSize="20" HorizontalOptions="Center" TextColor="{StaticResource TextSecondary}" />
+                <Label Text="Perfil" FontSize="11" HorizontalOptions="Center" TextColor="{StaticResource TextSecondary}" />
+            </VerticalStackLayout>
+
+        </Grid>
+
+    </Grid>
+</ContentPage>
